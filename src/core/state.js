@@ -3,7 +3,7 @@
 import { Emitter } from './emitter.js';
 import { Rng } from './rng.js';
 
-const KEY = 'quietpath.progress.v1';
+const KEY = 'quietpath.progress.v2';
 export const TIMES = ['dawn', 'morning', 'afternoon', 'evening', 'night'];
 export const TIME_LABELS = ['Dawn', 'Morning', 'Afternoon', 'Evening', 'Night'];
 export const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
@@ -11,14 +11,14 @@ export const ROLL_SIZE = 24;
 
 function freshState() {
   return {
-    version: 1,
+    version: 2,
     started: false,
+    pos: { x: 0.5, z: -70, yaw: Math.PI },
     day: 1,
     time: 1, // morning
     weather: 'mist',
     season: 'spring',
-    place: 'gate',
-    look: {},     // remembered look direction per place
+    zone: 'gate',
     flags: {},
     visited: {},
     roll: { id: 1, shots: 0 },
@@ -49,7 +49,7 @@ class GameState extends Emitter {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const loaded = JSON.parse(raw);
-        if (loaded && loaded.version === 1) this.s = { ...freshState(), ...loaded };
+        if (loaded && loaded.version === 2) this.s = { ...freshState(), ...loaded };
       }
       localStorage.setItem('quietpath.test', '1');
       localStorage.removeItem('quietpath.test');

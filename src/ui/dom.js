@@ -25,6 +25,11 @@ const ICONS = {
   sound: '<path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16 9a4 4 0 010 6"/>',
   mute: '<path d="M4 10v4h4l5 4V6L8 10z"/><path d="M17 9l4 6M21 9l-4 6"/>',
   back: '<path d="M15 5l-7 7 7 7"/>',
+  eye: '<path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/>',
+  walk: '<path d="M8 21l1.5-6"/><path d="M8.5 4.5c1.4 0 2.2 1.6 1.8 3.4-.3 1.6-1.3 2.6-2.4 2.4S6.4 8.8 6.8 7.2c.3-1.5.6-2.7 1.7-2.7z"/><path d="M15.5 10.5c1.4 0 2.2 1.6 1.8 3.4-.3 1.6-1.3 2.6-2.4 2.4s-1.5-1.5-1.1-3.1c.3-1.5.6-2.7 1.7-2.7z"/><path d="M15 21l.7-3"/>',
+  lotus: '<path d="M12 18c-3-2-4.5-5-4-9 2.2 1.3 3.5 3.5 4 6 .5-2.5 1.8-4.7 4-6 .5 4-1 7-4 9z"/><path d="M12 18c-4 0-7-1.8-9-4.5 2.5-.5 5 .3 6.5 2M12 18c4 0 7-1.8 9-4.5-2.5-.5-5 .3-6.5 2"/><path d="M5 21h14"/>',
+  talk: '<path d="M4 5h16v10H9l-4 4v-4H4z"/><path d="M8 9h8M8 12h5"/>',
+  bell: '<path d="M6 16V11a6 6 0 0112 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 004 0"/><path d="M12 3v2"/>',
 };
 export function icon(name) {
   const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');

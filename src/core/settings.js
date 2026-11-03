@@ -1,14 +1,20 @@
 // Player settings, stored separately from progress so "new stay" keeps them.
 import { Emitter } from './emitter.js';
 
-const KEY = 'quietpath.settings.v1';
+const KEY = 'quietpath.settings.v2';
 
 export const DEFAULTS = {
-  muted: true,          // sound starts off until the player chooses
+  muted: false,         // sound on by default (v2); the title screen makes the choice clear
   master: 0.8,
   ambience: 0.8,
   effects: 0.7,
   bell: 0.8,
+  music: 0.55,
+  musicOn: true,
+  bellFrequency: 'occasional', // off | occasional | frequent
+  pauseForBell: true,
+  fov: 62,
+  autoTurn: true,
   quality: 'auto',      // auto | low | medium | high
   reducedMotion: 'system', // system | on | off
   textSize: 'm',        // s | m | l | xl

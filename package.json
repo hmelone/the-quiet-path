@@ -10,7 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "idb-keyval": "^6.2.1"
+    "idb-keyval": "^6.2.1",
+    "three": "0.187.0"
   },
   "devDependencies": {
     "vite": "^6.3.5"

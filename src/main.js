@@ -1,15 +1,19 @@
-// The Quiet Path — game shell. Ties together rendering, places, input,
-// the story, the camera, sound and the interface.
+// The Quiet Path (v2) — a walkable valley in the spirit of the Plum Village tradition.
+// This shell ties together the 3D world, walking, the story, the camera,
+// sound, music, the bell of mindfulness and the interface.
 import './ui/styles.css';
-import { Renderer } from './render/gl.js';
-import { quality } from './render/quality.js';
-import { Scene } from './world/scene.js';
-import { atmosphere } from './world/atmosphere.js';
-import { PLACES } from './world/places/index.js';
+import * as THREE from 'three';
+import { World } from './world3d/world.js';
+import { Player } from './world3d/player.js';
+import { zoneAt, KINDS } from './world3d/interactables.js';
+import { polyDist, groundAt } from './world3d/terrain.js';
+import { STREAM, pondDist, START } from './world3d/layout.js';
 import { game, TIMES, TIME_LABELS, ROLL_SIZE } from './core/state.js';
 import { settings } from './core/settings.js';
 import { Input } from './core/input.js';
 import { audio } from './audio/audio.js';
+import { music } from './audio/music.js';
+import { BellKeeper } from './audio/bell.js';
 import { photos } from './camera/photos.js';
 import { exposeFrame, subjectsInFrame } from './camera/capture.js';
 import { Viewfinder } from './camera/viewfinder.js';
@@ -18,71 +22,95 @@ import { Dialog } from './ui/dialog.js';
 import { Sitting } from './ui/sit.js';
 import { h, wait } from './ui/dom.js';
 import { openMenu, openSettings, openAlbum, openAbout, titleScreen, confirmBox } from './ui/panels.js';
-import { SCRIPTS, PROMPTS, onEnter, dayIntro } from './story/content.js';
+import { SCRIPTS, PROMPTS, onEnterZone, dayIntro } from './story/content.js';
 
 const NIGHT_FADE = '#0e1220';
+
+function pickTier() {
+  const q = settings.get('quality');
+  if (q && q !== 'auto') return q;
+  const mem = navigator.deviceMemory || 4;
+  const cores = navigator.hardwareConcurrency || 4;
+  const small = Math.min(screen.width, screen.height) < 500;
+  if (mem <= 2 || cores <= 2) return 'low';
+  if (small || mem <= 4) return 'medium';
+  return 'high';
+}
 
 class Game {
   constructor() {
     this.ui = document.getElementById('ui');
     this.canvas = document.getElementById('world');
-    this.mode = 'title';
-    this.cx = 0.5;
-    this.lookVY = 0;
-    this.busy = false;
+    this.mode = 'loading';
     this.t = 0;
-    this.panels = 0;
+    this.zone = null;
+    this._acc = { zone: 0, audio: 0, save: 0 };
+    this.ray = new THREE.Raycaster();
   }
 
   async boot() {
     this.applyDocSettings();
-    settings.on('change', () => this.applyDocSettings());
+    settings.on('change', (k) => this.onSetting(k));
+    const loading = h('div', { class: 'loading', role: 'status' },
+      h('h1', {}, 'The Quiet Path'), h('div', { class: 'bar' }, h('i')), h('p', {}, 'Arriving…'));
+    this.ui.append(loading);
+    const bar = loading.querySelector('i'), msg = loading.querySelector('p');
     try {
-      this.r = new Renderer(this.canvas);
+      this.world = new World(this.canvas, pickTier());
     } catch (err) {
+      loading.remove();
       this.ui.append(h('div', { class: 'toast-error' }, h('div', {},
         h('h1', { style: { fontFamily: 'var(--serif)' } }, 'The Quiet Path'),
-        h('p', {}, 'This browser can’t show the painted world (WebGL2 isn’t available). Try a recent version of Chrome, Firefox, Safari or Edge.'))));
+        h('p', {}, 'This browser can’t show the 3D world (WebGL isn’t available). Try a recent version of Chrome, Firefox, Safari or Edge.'))));
       return;
     }
+    await this.world.build((p, text) => { bar.style.width = `${Math.round(p * 100)}%`; msg.textContent = `${text}…`; });
+    this.engine = this.world.engine;
+    const pos = game.hasSave ? game.s.pos : START;
+    this.player = new Player(this.world.nav, pos);
+    this.player.onStep = (surface) => audio.step(surface);
+    this.world.setConditions(this.cond);
+    this.updateFov();
+
     this.hud = new Hud(this.ui, {
       camera: () => this.toggleCamera(),
       album: () => this.openAlbum(),
       menu: () => this.openMenu(),
-      poi: (d) => this.usePoi(d),
+      sound: () => { audio.init(); settings.set('muted', !settings.get('muted')); this.startMusic(); },
+      use: (it) => this.use(it),
     });
     this.dialog = new Dialog(this.ui);
-    this.vf = new Viewfinder(this.ui, {
-      shutter: () => this.shutter(),
-      close: () => this.toggleCamera(false),
-    });
+    this.vf = new Viewfinder(this.ui, { shutter: () => this.shutter(), close: () => this.toggleCamera(false), focusChanged: () => {} });
     this.sitting = new Sitting(this.ui, { dialog: this.dialog, whisper: (t, ms) => this.hud.whisper(t, ms), audio });
     this.flash = h('div', { class: 'flash' });
     this.devOverlay = h('div', { class: 'develop-overlay' });
-    this.ui.append(this.flash, this.devOverlay);
+    this.breath = h('div', { class: 'breath-pause', 'aria-live': 'polite' }, h('div', { class: 'ring', 'aria-hidden': 'true' }), h('p'), h('button', { onclick: () => this.endBreath() }, 'Continue'));
+    this.marker = this.makeMarker();
+    this.ui.append(this.flash, this.devOverlay, this.breath);
     audio.onCaption = (t) => this.hud.caption(t);
+    this.bells = new BellKeeper((src) => this.bellOfMindfulness(src));
     this.input = new Input(this.canvas, {
       look: (dx, dy) => this.look(dx, dy),
-      zoom: (k) => this.vf.active && this.vf.setZoom(this.vf.zoom * k),
+      zoom: (k) => this.vf.active && (this.vf.setZoom(this.vf.zoom * k), this.updateFov()),
       wheelZooms: () => this.vf.active,
       tap: (x, y) => this.tap(x, y),
       key: (k, e) => this.key(k, e),
-      activity: () => audio.ctx && audio.init(),
+      activity: () => { if (audio.ctx) audio.init(); },
     });
     window.addEventListener('resize', () => this.vf.active && this.vf.layout());
-    quality.onChange = () => {};
     if (!game.storageOk) setTimeout(() => this.hud.whisper('Your browser isn’t letting this page save. You can still play; progress won’t be kept.'), 3000);
 
-    // Title: show the place you were last in (or the gate) behind the title.
     this.hud.show(false);
-    await this.loadPlace(game.hasSave ? game.s.place : 'gate', { first: true, silent: true });
+    this.mode = 'title';
     this.loop();
+    loading.style.opacity = 0;
+    setTimeout(() => loading.remove(), 1200);
     window.__ready = true;
-    titleScreen(this.ui, {
-      hasSave: game.hasSave,
-      onBegin: () => this.begin(true),
-      onContinue: () => this.begin(false),
-    });
+    this.showTitle();
+  }
+
+  showTitle() {
+    titleScreen(this.ui, { hasSave: game.hasSave, onBegin: () => this.begin(true), onContinue: () => this.begin(false) });
   }
 
   applyDocSettings() {
@@ -93,137 +121,54 @@ class Game {
     d.dataset.motion = settings.reducedMotion ? 'reduced' : '';
   }
 
+  onSetting(k) {
+    this.applyDocSettings();
+    if (k === 'fov') this.updateFov();
+    if (k === 'bellFrequency') this.bells?.reset();
+    if (k === 'musicOn' || k === 'muted') this.startMusic();
+  }
+
+  updateFov() {
+    const base = settings.get('fov') || 62;
+    this.engine.camera.fov = this.vf?.active ? base / this.vf.zoom : base;
+    this.engine.camera.updateProjectionMatrix();
+  }
+
   get cond() {
     const s = game.s;
     return { season: s.season, weather: s.weather, time: s.time, flags: s.flags, day: s.day };
   }
 
+  startMusic() {
+    if (!audio.ctx) return;
+    music.start();
+    music.setTime(TIMES[game.s.time]);
+  }
+
   async begin(fresh) {
     audio.init();
     if (fresh && game.hasSave) {
-      const ok = await confirmBox(this.ui, 'Begin a new stay?', 'Your progress will start again from the gate. Your photographs will be kept in the album.', 'Begin again');
-      if (!ok) {
-        titleScreen(this.ui, { hasSave: true, onBegin: () => this.begin(true), onContinue: () => this.begin(false) });
-        return;
-      }
+      const ok = await confirmBox(this.ui, 'Begin a new stay?', 'Your progress will start again from the gate. Your photographs stay in the album.', 'Begin again');
+      if (!ok) { this.showTitle(); return; }
     }
     if (fresh) {
       game.reset();
       game.set({ started: true });
+      this.player.x = START.x; this.player.z = START.z; this.player.yaw = START.yaw;
+      this.player.stop();
+      this.world.setConditions(this.cond);
     }
+    this.startMusic();
     this.mode = 'explore';
-    await this.loadPlace(game.s.place, { force: true });
+    this.hud.show(true);
+    this.zone = null;
     if (innerHeight > innerWidth * 1.2 && !localStorage.getItem('quietpath.landscapeHint')) {
       try { localStorage.setItem('quietpath.landscapeHint', '1'); } catch { /* ignore */ }
-      setTimeout(() => this.hud.whisper('Tip: turning your phone sideways shows more of each place. Either way is fine.', 6000), 15000);
+      setTimeout(() => this.hud.whisper('Tip: turning your phone sideways shows more of the valley. Either way is fine.', 6000), 20000);
     }
   }
 
-  // --- places ------------------------------------------------------------------
-
-  async loadPlace(id, { first = false, silent = false, force = false, fadeColor } = {}) {
-    if (this.busy && !first) return;
-    this.busy = true;
-    const place = PLACES[id] || PLACES.gate;
-    const cond = this.cond;
-    const key = `${place.id}|${place.paintKey ? place.paintKey(cond) : ''}|${cond.time}|${cond.weather}|${quality.name}`;
-    const same = this.scene && this.sceneKey === key && !force;
-    if (!first && !same) await this.hud.fade(true, fadeColor);
-    if (!same) {
-      const prev = this.scene;
-      const scene = new Scene(this.r, place, cond);
-      await scene.load();
-      prev?.dispose();
-      this.scene = scene;
-      this.sceneKey = key;
-      if (this.place?.id !== place.id) this.cx = game.s.look[place.id] ?? place.start ?? 0.5;
-      this.place = place;
-    }
-    this.atm = atmosphere(TIMES[cond.time], cond.weather, place.interior);
-    if (!place.closeup) game.set({ place: place.id });
-    game.s.visited[place.id] = true;
-    this.refreshPois();
-    if (!silent) {
-      this.hud.show(this.mode === 'explore');
-      this.hud.setPlace(place.name, place.closeup ? 'up close' : `Day ${cond.day} · ${TIME_LABELS[cond.time]}`);
-      this.hud.announce(`${place.name}. ${TIME_LABELS[cond.time]}, ${cond.weather}. ${place.describe(cond)}`);
-    }
-    audio.setScene(place.sound, this.audioEnv());
-    if (!first) await this.hud.fade(false);
-    this.busy = false;
-    if (!silent && this.mode === 'explore') onEnter(place.id, this.api());
-  }
-
-  refreshPois() {
-    const cond = this.cond;
-    const defs = (this.place.pois || []).filter((p) => !p.visible || p.visible(cond));
-    this.hud.setPois(defs);
-  }
-
-  /** Repaint the current place if story changes affect what it looks like. */
-  async repaint() {
-    await this.loadPlace(this.place.id);
-  }
-
-  audioEnv() {
-    const a = this.atm || atmosphere('morning', 'clear');
-    return { daylight: a.daylight, rain: a.rain, wind: a.wind, night: game.s.time >= 3 || game.s.time === 0, time: game.s.time };
-  }
-
-  async go(to) {
-    if (this.busy) return;
-    const surface = this.place.interior || PLACES[to]?.interior ? 'wood' : 'stone';
-    audio.footsteps(5, surface);
-    game.s.look[this.place.id] = this.cx;
-    await this.loadPlace(to);
-  }
-
-  // --- time ------------------------------------------------------------------------
-
-  async passTime(text, ringBell = false) {
-    const wasRain = game.s.weather === 'rain';
-    await this.hud.fade(true, game.s.time >= 2 ? NIGHT_FADE : '#cfd5d2');
-    const newDay = game.advanceTime();
-    if (newDay) game.s.flags.rainedYesterday = wasRain;
-    if (ringBell) audio.rin('[you ring the small bell]');
-    setTimeout(() => audio.bell(), ringBell ? 1800 : 300);
-    await wait(900);
-    await this.loadPlace(this.place.id, { force: true, first: true });
-    await this.hud.fade(false);
-    const msg = newDay ? dayIntro(game.s.day, game.s.weather) : text || `${TIME_LABELS[game.s.time]}.`;
-    if (msg) this.hud.whisper(msg);
-    onEnter(this.place.id, this.api());
-  }
-
-  async sleep() {
-    const wasRain = game.s.weather === 'rain';
-    await this.hud.fade(true, NIGHT_FADE);
-    await wait(1200);
-    game.sleep();
-    game.s.flags.rainedYesterday = wasRain;
-    game.save();
-    await this.loadPlace(this.place.id, { force: true, first: true });
-    await wait(400);
-    await this.hud.fade(false);
-    setTimeout(() => audio.bell('[the morning bell, far off]'), 600);
-    this.hud.whisper(dayIntro(game.s.day, game.s.weather) || 'Morning.');
-  }
-
-  // --- interaction ------------------------------------------------------------------
-
-  async usePoi(def) {
-    if (this.busy || this.dialog.open || this.mode !== 'explore') return;
-    if (def.kind === 'path') return this.go(def.to);
-    const fn = SCRIPTS[def.script];
-    if (!fn) return;
-    this.mode = 'dialog';
-    this.hud.show(false);
-    try { await fn(this.api()); } finally {
-      if (this.mode === 'dialog') this.mode = 'explore';
-      this.hud.show(this.mode === 'explore');
-      this.refreshPois();
-    }
-  }
+  // --- story API ---------------------------------------------------------------------
 
   api() {
     const g = this;
@@ -238,28 +183,172 @@ class Game {
       get weather() { return game.s.weather; },
       get isDark() { return game.isDark; },
       audio,
-      repaint: () => g.repaint(),
-      closeup: async (id) => { g.mode = 'explore'; await g.go(id); },
+      refresh: () => g.world.placeBowl(game.s.flags),
       passTime: (t, bell) => g.passTime(t, bell),
       sleep: () => g.sleep(),
       sit: (kind) => g.sit(kind),
       develop: () => g.develop(),
+      bell: (src) => g.bellOfMindfulness(src),
       prompt: () => PROMPTS[Math.floor(Math.random() * PROMPTS.length)],
       keepPrompt: (p) => game.setFlag('prompt', p),
     };
   }
 
+  async runScript(name) {
+    const fn = SCRIPTS[name];
+    if (!fn) return;
+    this.mode = 'dialog';
+    this.hud.show(false);
+    try { await fn(this.api()); } finally {
+      if (this.mode === 'dialog') this.mode = 'explore';
+      this.hud.show(this.mode === 'explore');
+      if (this._pendingBreath) { this._pendingBreath = false; this.startBreath(); }
+    }
+  }
+
+  /** Approach an interactable: walk to it, face it, then act. */
+  use(it) {
+    if (this.mode !== 'explore' || this.dialog.open) return;
+    audio.init();
+    if (it.kind === 'go') {
+      const ok = this.player.walkTo(it.to[0], it.to[1], null, it.faceTo);
+      if (ok) {
+        this.hud.whisper(`Walking to ${it.toName}…`, 2500);
+        this.showMarker(it.to[0], it.to[1]);
+      }
+      return;
+    }
+    const pos = this.itemPos(it);
+    let stand = it.stand;
+    if (it.dynamic) {
+      const dx = this.player.x - pos.x, dz = this.player.z - pos.z, d = Math.hypot(dx, dz) || 1;
+      stand = [pos.x + (dx / d) * 2.4, pos.z + (dz / d) * 2.4];
+    }
+    const act = () => {
+      this.player.lookTarget = Math.atan2(-(pos.x - this.player.x), -(pos.z - this.player.z));
+      if (it.dynamic) {
+        // the person turns to face you
+        const f = it.dynamic();
+        if (f) f.rotation.y = Math.atan2(-(this.player.x - f.position.x), -(this.player.z - f.position.z));
+        this.player.pitch = -0.06;
+      }
+      setTimeout(() => this.runScript(it.script), 350);
+    };
+    if (!stand || Math.hypot(stand[0] - this.player.x, stand[1] - this.player.z) < 1.2) act();
+    else if (!this.player.walkTo(stand[0], stand[1], act)) act();
+  }
+
+  itemPos(it) {
+    if (it.dynamic) {
+      const f = it.dynamic();
+      if (f) return { x: f.position.x, y: f.position.y + 2.1, z: f.position.z };
+    }
+    return { x: it.x, y: it.y, z: it.z };
+  }
+
+  // --- the bell of mindfulness --------------------------------------------------------
+
+  bellOfMindfulness(source) {
+    if (this.mode === 'title' || this.mode === 'loading') return;
+    const cap = source === 'you' ? '[you invite the great bell; its sound spreads across the valley]' : source === 'time' ? '[the great bell sounds from the tower]' : '[the bell of mindfulness sounds from the tower]';
+    // a soft "waking" touch first, then the full sound
+    audio.rin('');
+    setTimeout(() => audio.bell(cap), 1600);
+    this.bells.reset();
+    audio.setDuck(0.25);
+    this.breathTarget = 1;
+    clearTimeout(this._breathEnd);
+    if (settings.get('pauseForBell') && this.mode === 'dialog' && source === 'you') {
+      this._pendingBreath = true; // start once the dialog closes
+      return;
+    }
+    this.startBreath();
+  }
+
+  startBreath() {
+    const pauseBreath = settings.get('pauseForBell') && (this.mode === 'explore' || this.mode === 'camera');
+    this.breathTarget = 1;
+    clearTimeout(this._breathEnd);
+    if (pauseBreath) {
+      if (this.vf.active) this.toggleCamera(false);
+      this.mode = 'breath';
+      this.hud.show(false);
+      this.breath.classList.add('on');
+      const p = this.breath.querySelector('p');
+      const lines = ['Everyone in the valley stops where they are.', 'Breathing in…', 'Breathing out…', 'Breathing in…', 'Breathing out…', 'Breathing in…', 'Breathing out…'];
+      let i = 0;
+      const next = () => {
+        if (this.mode !== 'breath') return;
+        p.textContent = lines[i];
+        this.hud.announce(lines[i]);
+        i++;
+        if (i < lines.length) this._breathT = setTimeout(next, i === 1 ? 4000 : settings.reducedMotion ? 3000 : 3600);
+        else this._breathEnd = setTimeout(() => this.endBreath(), 3500);
+      };
+      next();
+      setTimeout(() => this.breath.querySelector('button').focus(), 300);
+    } else {
+      this._breathEnd = setTimeout(() => this.endBreath(), 15000);
+    }
+  }
+
+  endBreath() {
+    clearTimeout(this._breathT);
+    clearTimeout(this._breathEnd);
+    this.breathTarget = 0;
+    audio.setDuck(1);
+    this.breath.classList.remove('on');
+    if (this.mode === 'breath') {
+      this.mode = 'explore';
+      this.hud.show(true);
+    }
+  }
+
+  // --- time -------------------------------------------------------------------------------
+
+  async passTime(text, ringBell = false) {
+    const wasRain = game.s.weather === 'rain';
+    await this.hud.fade(true, game.s.time >= 2 ? NIGHT_FADE : '#cfd5d2');
+    const newDay = game.advanceTime();
+    if (newDay) game.s.flags.rainedYesterday = wasRain;
+    if (ringBell) audio.rin('[you invite the small bell]');
+    setTimeout(() => audio.bell('[the great bell sounds from the tower]'), ringBell ? 1800 : 300);
+    this.world.setConditions(this.cond, !!this.zone?.interior);
+    music.setTime(TIMES[game.s.time]);
+    await wait(900);
+    await this.hud.fade(false);
+    const msg = newDay ? dayIntro(game.s.day, game.s.weather) : text || `${TIME_LABELS[game.s.time]}.`;
+    if (msg) this.hud.whisper(msg);
+    this.hud.setPlace(this.zone?.name || '', `Day ${game.s.day} · ${TIME_LABELS[game.s.time]}`);
+  }
+
+  async sleep() {
+    const wasRain = game.s.weather === 'rain';
+    await this.hud.fade(true, NIGHT_FADE);
+    await wait(1200);
+    game.sleep();
+    game.s.flags.rainedYesterday = wasRain;
+    game.save();
+    this.world.setConditions(this.cond, !!this.zone?.interior);
+    music.setTime(TIMES[game.s.time]);
+    await wait(400);
+    await this.hud.fade(false);
+    setTimeout(() => audio.bell('[the morning bell, from the tower]'), 600);
+    this.hud.whisper(dayIntro(game.s.day, game.s.weather) || 'Morning.');
+    this.hud.setPlace(this.zone?.name || '', `Day ${game.s.day} · ${TIME_LABELS[game.s.time]}`);
+  }
+
   async sit(kind) {
     this.mode = 'sit';
     this.hud.show(false);
+    audio.setDuck(0.4);
+    this.player.seated = true;
     const how = await this.sitting.start(kind);
+    this.player.seated = false;
+    audio.setDuck(1);
     this.mode = 'explore';
-    if (how === 'bell') {
-      await this.passTime('The bell sounds. You unfold your legs slowly, and stand.');
-    } else {
-      audio.rin('[a small bell]');
-      this.hud.show(true);
-    }
+    if (how === 'bell') await this.passTime('The bell sounds. You stretch slowly, and stand.');
+    else { audio.rin('[a small bell]'); this.hud.show(true); }
   }
 
   async develop() {
@@ -284,42 +373,92 @@ class Game {
     this.openAlbum(fresh.map((p) => p.id));
   }
 
-  // --- look & camera ----------------------------------------------------------------
+  // --- looking, tapping, camera ----------------------------------------------------------
 
   look(dx, dy) {
-    if (this.mode === 'title' || !this.scene) return;
-    if (this.mode === 'sit') return;
-    const v = this.scene.view(innerWidth / innerHeight);
-    const range = Math.max(0.2, this.place.lw - v.viewW);
+    if (!['explore', 'camera', 'sit'].includes(this.mode)) return;
     const zoom = this.vf.active ? this.vf.zoom : 1;
-    this.cx -= (dx * v.viewW) / range / zoom;
-    this.cx = Math.max(0, Math.min(1, this.cx));
-    if (this.vf.active) this.vf.pan(-dy);
+    const k = 2.6 / zoom;
+    this.player.look(dx * k, dy * k * 0.8);
   }
 
   tap(x, y) {
-    if (!this.vf.active || !this.scene) return;
-    const r = this.vf.rect;
-    if (x < r.x || x > r.x + r.w || y < r.y || y > r.y + r.h) return;
-    const zs = this.vf.zoomSub;
-    const depth = this.scene.pickDepth(x / innerWidth, y / innerHeight, innerWidth / innerHeight, this.cx, zs);
-    this.vf.setFocusAt(depth, x, y);
+    if (this.mode === 'camera') {
+      const r = this.vf.rect;
+      if (x < r.x || x > r.x + r.w || y < r.y || y > r.y + r.h) return;
+      const hit = this.raycastScreen(x, y);
+      this.vf.setFocusAt(hit ? Math.max(0.5, hit.distance) : 40, x, y);
+      return;
+    }
+    if (this.mode !== 'explore') return;
+    audio.init();
+    const hit = this.raycastScreen(x, y);
+    if (!hit) return;
+    const p = hit.point;
+    if (Math.hypot(p.x - this.player.x, p.z - this.player.z) < 0.6) return;
+    if (this.player.walkTo(p.x, p.z)) this.showMarker(p.x, p.z);
+  }
+
+  raycastScreen(x, y) {
+    const ndc = new THREE.Vector2((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
+    this.ray.setFromCamera(ndc, this.engine.camera);
+    this.ray.far = 120;
+    if (!this.rayTargets) {
+      this.rayTargets = [];
+      this.engine.scene.traverse((o) => { if (o.isMesh && !o.isInstancedMesh && o.geometry?.attributes?.position?.count > 3 && !o.material?.transparent) this.rayTargets.push(o); });
+    }
+    const hits = this.ray.intersectObjects(this.rayTargets, false);
+    return hits[0] || null;
+  }
+
+  makeMarker() {
+    const m = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.3, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xfff6e0, transparent: true, opacity: 0, depthWrite: false }));
+    this.engine.scene.add(m);
+    return m;
+  }
+
+  showMarker(x, z) {
+    this.marker.position.set(x, groundAt(x, z) + 0.06, z);
+    this.marker.material.opacity = 0.9;
+    this.markerT = 0;
   }
 
   toggleCamera(on = !this.vf.active) {
-    if (this.mode !== 'explore' && on) return;
+    if (on && this.mode !== 'explore') return;
     if (on) {
       this.mode = 'camera';
+      this.player.stop();
       this.hud.show(false);
       this.vf.updateInfo(game.s.roll.shots);
       this.vf.open(game.flag('prompt'));
+      this.updateFov();
       audio.page();
     } else {
       this.vf.close();
       this.mode = 'explore';
+      this.updateFov();
       this.hud.show(true);
       this.hud.cameraBtn.focus();
     }
+  }
+
+  photoThings() {
+    const things = [];
+    for (const it of this.world.interactables) {
+      if (it.kind === 'go' || (it.visible && !it.visible(this.cond))) continue;
+      const p = this.itemPos(it);
+      things.push({ ...p, label: it.label.charAt(0).toLowerCase() + it.label.slice(1), r: 0.8 });
+    }
+    const roleLabel = { 'walking line': 'the walking meditation line', sweeping: 'someone sweeping the path', sitting: 'people sitting in the hall', tea: 'tea on the terrace', 'working in the orchard': 'someone working in the orchard', reading: 'someone reading by the pond', 'Sister Hien': 'Sister Hien' };
+    for (const p of this.world.people.list) {
+      const f = p.fig.position;
+      things.push({ x: f.x, y: f.y + 1, z: f.z, label: roleLabel[p.role] || 'someone', r: 0.7 });
+    }
+    for (const a of this.world.animals.list) {
+      const o = a.obj.position;
+      things.push({ x: o.x, y: o.y + 0.5, z: o.z, label: a.label, r: a.kind === 'bird' ? 0.5 : a.kind === 'koi' || a.kind === 'squirrel' ? 0.25 : 0.7, range: a.kind === 'bird' ? 120 : 40 });
+    }
+    return things;
   }
 
   async shutter() {
@@ -332,28 +471,27 @@ class Game {
     audio.shutter();
     this.flash.classList.add('on');
     setTimeout(() => this.flash.classList.remove('on'), 90);
-    const aspect = innerWidth / innerHeight;
-    const zs = this.vf.zoomSub, fs = this.vf.frameSub;
-    const sub = { x: zs.x + fs.x * zs.w, y: zs.y + fs.y * zs.h, w: fs.w * zs.w, h: fs.h * zs.h };
+    const W = innerWidth, H = innerHeight;
+    const frame = this.vf.rect;
     const cond = this.cond;
-    const subjects = subjectsInFrame(this.scene, this.place, cond, aspect, this.cx, sub);
+    const cam = this.engine.camera;
+    const subjects = subjectsInFrame({ camera: cam, W, H, frame, things: this.photoThings(), raycastBlockers: this.rayTargets || [] });
     try {
       const { full, small } = await exposeFrame({
-        renderer: this.r, scene: this.scene, atm: this.atm, aspect, cx: this.cx, sub,
-        focus: this.vf.focus, zoom: this.vf.zoom, env: this.env, reduced: settings.reducedMotion,
-        photoW: quality.tier.photoW, portrait: this.vf.portrait,
+        renderer: this.engine.renderer, scene: this.engine.scene, camera: cam, W, H, frame,
+        focus: this.vf.focus, photoW: this.engine.tier.photoW, portrait: this.vf.portrait,
       });
-      const frame = game.s.roll.shots + 1;
+      const shot = game.s.roll.shots + 1;
       const meta = {
         id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
-        day: cond.day, time: cond.time, weather: cond.weather, season: cond.season, place: this.place.id,
-        roll: game.s.roll.id, frame, subjects, prompt: game.flag('prompt') || null,
+        day: cond.day, time: cond.time, weather: cond.weather, season: cond.season, place: this.zone?.id || 'valley',
+        roll: game.s.roll.id, frame: shot, subjects, prompt: game.flag('prompt') || null,
         developed: !!settings.get('instantReview'), created: Date.now(),
       };
       await photos.add(meta, full, small);
-      game.set({ roll: { ...game.s.roll, shots: frame } });
+      game.set({ roll: { ...game.s.roll, shots: shot } });
       audio.advance();
-      this.vf.updateInfo(frame);
+      this.vf.updateInfo(shot);
       if (subjects.length) this.hud.caption(`— ${subjects[0]}`);
     } catch (err) {
       console.error(err);
@@ -362,145 +500,242 @@ class Game {
     this._exposing = false;
   }
 
-  // --- panels -----------------------------------------------------------------------
+  // --- panels -------------------------------------------------------------------------------
 
-  async openAlbum(highlight) {
-    if (this.mode === 'title') return;
-    const prev = this.mode;
-    if (this.vf.active) this.toggleCamera(false);
-    this.mode = 'panel';
-    this.hud.show(false);
-    const p = await openAlbum(this.ui, { highlight });
+  watchPanels(prev) {
     const obs = new MutationObserver(() => {
-      if (!p.wrap.isConnected && !this.ui.querySelector('.panel-wrap')) {
+      if (!this.ui.querySelector('.panel-wrap')) {
         obs.disconnect();
-        this.mode = prev === 'camera' || prev === 'panel' ? 'explore' : prev === 'dialog' ? 'explore' : prev;
+        if (this.mode === 'panel') this.mode = prev === 'camera' || prev === 'panel' || prev === 'dialog' ? 'explore' : prev;
         this.hud.show(this.mode === 'explore');
       }
     });
     obs.observe(this.ui, { childList: true });
+    return obs;
+  }
+
+  async openAlbum(highlight) {
+    if (this.mode === 'title' || this.mode === 'loading') return;
+    const prev = this.mode;
+    if (this.vf.active) this.toggleCamera(false);
+    this.mode = 'panel';
+    this.hud.show(false);
+    await openAlbum(this.ui, { highlight });
+    this.watchPanels(prev === 'camera' ? 'explore' : prev);
   }
 
   openMenu() {
-    if (this.mode === 'title' || this.ui.querySelector('.panel-wrap')) return;
+    if (this.mode === 'title' || this.mode === 'loading' || this.ui.querySelector('.panel-wrap')) return;
     if (this.vf.active) this.toggleCamera(false);
     const prev = this.mode;
     this.mode = 'panel';
     this.hud.show(false);
-    const restore = () => {
-      if (!this.ui.querySelector('.panel-wrap')) {
-        this.mode = prev === 'panel' ? 'explore' : prev;
-        this.hud.show(this.mode === 'explore');
-      }
-    };
-    const obs = new MutationObserver(() => { if (!this.ui.querySelector('.panel-wrap')) { obs.disconnect(); restore(); } });
-    obs.observe(this.ui, { childList: true });
+    const obs = this.watchPanels(prev);
     openMenu(this.ui, {
-      onSettings: () => openSettings(this.ui, () => audio.init()),
+      onSettings: () => openSettings(this.ui, () => { audio.init(); this.startMusic(); }),
       onAlbum: () => openAlbum(this.ui),
       onAbout: () => openAbout(this.ui),
       onTitle: () => {
         obs.disconnect();
         this.mode = 'title';
         this.hud.show(false);
-        game.s.look[this.place.id] = this.cx;
-        game.save();
-        titleScreen(this.ui, { hasSave: game.hasSave, onBegin: () => this.begin(true), onContinue: () => this.begin(false) });
+        this.savePos();
+        this.showTitle();
       },
       onNewStay: async () => {
         const ok = await confirmBox(this.ui, 'Begin a new stay?', 'Your progress will start again from the gate. Your photographs stay in the album.', 'Begin again');
         if (ok) {
           game.reset();
           game.set({ started: true });
+          Object.assign(this.player, { x: START.x, z: START.z, yaw: START.yaw });
+          this.player.stop();
+          this.world.setConditions(this.cond);
+          this.zone = null;
           this.mode = 'explore';
-          await this.loadPlace('gate', { force: true });
+          this.hud.show(true);
         }
       },
     });
   }
 
   key(k, e) {
-    if (this.mode === 'title') return;
-    const inPanel = !!this.ui.querySelector('.panel-wrap');
-    if (inPanel || this.dialog.open) return;
+    if (this.mode === 'title' || this.mode === 'loading') return;
+    if (this.ui.querySelector('.panel-wrap') || this.dialog.open) return;
+    if (this.mode === 'breath') { if (k === 'escape' || k === 'enter' || k === ' ') this.endBreath(); return; }
     if (this.mode === 'camera') {
       if (k === ' ' || k === 'enter') { e.preventDefault(); this.shutter(); }
       else if (k === 'escape' || k === 'c') this.toggleCamera(false);
       else if (k === 'f') this.vf.cycleFocus();
-      else if (k === '+' || k === '=') this.vf.setZoom(this.vf.zoom + 0.25);
-      else if (k === '-' || k === '_') this.vf.setZoom(this.vf.zoom - 0.25);
+      else if (k === '+' || k === '=') { this.vf.setZoom(this.vf.zoom + 0.25); this.updateFov(); }
+      else if (k === '-' || k === '_') { this.vf.setZoom(this.vf.zoom - 0.25); this.updateFov(); }
       return;
     }
     if (this.mode !== 'explore') return;
     if (k === 'c') this.toggleCamera(true);
     else if (k === 'escape') this.openMenu();
     else if (k === 'p') this.openAlbum();
-    else if (k === 'w' || (k === 'arrowup' && e.target === document.body)) this.activateNearest((d) => d.kind === 'path');
-    else if (k === 's') this.activateNearest((d) => d.kind === 'sit');
     else if (k === 'e' || (k === 'enter' && e.target === document.body)) {
-      if (!this.activateNearest((d) => d.kind !== 'path')) this.activateNearest(() => true);
+      if (this.nearest) this.use(this.nearest);
     }
   }
 
-  /** Use the visible point of interest nearest the centre of the screen. */
-  activateNearest(filter) {
-    let best = null, bd = Infinity;
-    for (const p of this.hud.pois) {
-      if (!filter(p.def) || p.el.style.visibility === 'hidden') continue;
-      const x = parseFloat(p.el.style.left), y = parseFloat(p.el.style.top);
-      const d = Math.hypot(x - innerWidth / 2, (y - innerHeight / 2) * 0.5);
-      if (d < bd) { bd = d; best = p.def; }
-    }
-    if (best) this.usePoi(best);
-    return !!best;
+  savePos() {
+    game.s.pos = { x: this.player.x, z: this.player.z, yaw: this.player.yaw };
+    game.s.zone = this.zone?.id || 'valley';
+    game.save();
   }
 
-  // --- frame loop ---------------------------------------------------------------------
+  // --- every frame --------------------------------------------------------------------------
 
   loop() {
     let last = performance.now();
     const frame = (now) => {
-      const dtMs = now - last;
+      const raw = (now - last) / 1000;
+      const dt = Math.min(0.1, raw);
       last = now;
-      const dt = Math.min(0.05, dtMs / 1000);
-      this.t += dt;
-      quality.sample(dtMs);
-      if (!document.hidden && this.scene && !this.busyPaint) this.render(dt);
+      if (!document.hidden) this.frame(dt, raw);
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
   }
 
-  render(dt) {
+  /** Quietly lower the visual cost if frames are consistently slow. */
+  watchPerformance(rawDt) {
+    if (this.mode !== 'explore' || settings.get('quality') !== 'auto') return;
+    this._perf = this._perf || { samples: [], step: 0, cool: 0 };
+    const p = this._perf;
+    if (p.cool > 0) { p.cool -= rawDt; return; }
+    p.samples.push(rawDt);
+    if (p.samples.length < 90) return;
+    const sorted = [...p.samples].sort((a, b) => a - b);
+    const median = sorted[sorted.length >> 1];
+    p.samples = [];
+    if (median < 0.04) return;
+    const eng = this.engine;
+    if (p.step === 0 && eng.tier.pixelRatio > 1) { eng.tier = { ...eng.tier, pixelRatio: 1 }; }
+    else if (p.step <= 1 && eng.renderer.shadowMap.enabled) {
+      eng.renderer.shadowMap.enabled = false;
+      eng.scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); });
+    } else return;
+    p.step++;
+    p.cool = 3;
+  }
+
+  frame(dt, rawDt = dt) {
+    this.watchPerformance(rawDt);
+    this.t += dt;
     const reduced = settings.reducedMotion;
-    const [dx, dy] = this.input.step(dt);
-    if (dx || dy) this.look(dx, dy);
-    this.r.resize(innerWidth, innerHeight, quality.pixelRatio);
-    const atm = this.atm;
-    this.env = {
-      speed: reduced ? 0.45 : 1, wind: atm.wind, daylight: atm.daylight, rain: atm.rain,
-      night: game.s.time >= 3 || game.s.time === 0,
-    };
-    this.scene.update(dt, this.env);
-    const aspect = this.r.width / this.r.height;
-    const drift = reduced || this.vf.active ? 0 : Math.sin(this.t * 0.05) * 0.004;
-    const cx = Math.max(0, Math.min(1, this.cx + drift));
-    const opts = { cx, env: this.env, reduced };
-    if (this.vf.active) {
-      opts.sub = this.vf.zoomSub;
-      opts.focus = this.vf.focus;
-      opts.zoom = this.vf.zoom;
+    const eng = this.engine;
+    const px = this.player;
+    // ease the world's pause for the bell
+    const target = this.breathTarget || 0;
+    this.world.pause += (target - this.world.pause) * Math.min(1, dt * 1.5);
+    px.pause = this.mode === 'breath' ? 1 : this.world.pause * 0.6;
+
+    const inp = this.input.step(dt);
+    if (inp.dx || inp.dy) this.look(inp.dx, inp.dy);
+    const canWalk = this.mode === 'explore';
+    if (this.mode === 'title') {
+      // a slow, gentle look across the valley behind the title
+      px.yaw += dt * (reduced ? 0 : 0.02);
     }
-    this.scene.render(null, aspect, atm, opts);
-    if (this.mode === 'explore') {
-      this.hud.layoutPois((d) => {
-        const [sx, sy] = this.scene.project(d.layer, d.x, d.y, aspect, cx);
-        return [sx * innerWidth, sy * innerHeight];
-      });
+    px.update(dt, { f: canWalk ? inp.f : 0, s: canWalk ? inp.s : 0, userLooking: this.input.dragging, autoTurn: settings.get('autoTurn'), reduced });
+    eng.resize(innerWidth, innerHeight, Math.min(window.devicePixelRatio || 1, eng.tier.pixelRatio));
+    px.applyTo(eng.camera);
+    this.world.reducedMotion = reduced;
+    this.world.update(dt, px);
+    this.bells.update(dt, this.mode === 'explore');
+
+    // tap marker fades out
+    if (this.marker.material.opacity > 0) {
+      this.markerT += dt;
+      this.marker.material.opacity = Math.max(0, 0.9 - this.markerT * 0.6);
+      if (!px.route) this.marker.material.opacity *= 0.9;
     }
+
+    // zones (place names, descriptions, story events)
+    this._acc.zone += dt;
+    if (this._acc.zone > 0.3) {
+      this._acc.zone = 0;
+      const z = zoneAt(px.x, px.z);
+      if (z !== this.zone) {
+        const wasInterior = !!this.zone?.interior;
+        this.zone = z;
+        if (!!z.interior !== wasInterior) this.world.setInterior(!!z.interior);
+        if (this.mode !== 'title') {
+          this.hud.setPlace(z.name, `Day ${game.s.day} · ${TIME_LABELS[game.s.time]}`);
+          this.hud.announce(`${z.name}.`);
+          onEnterZone(z.id, this.api());
+        }
+      }
+    }
+
+    // sound follows where you are
+    this._acc.audio += dt;
+    if (this._acc.audio > 0.6 && audio.ctx) {
+      this._acc.audio = 0;
+      const sd = polyDist(STREAM, px.x, px.z);
+      const pd = pondDist(px.x, px.z);
+      const interior = !!this.zone?.interior;
+      const elev = Math.max(0, Math.min(1, (px.y - 2) / 20));
+      const forest = Math.min(1, Math.max(0, (Math.abs(px.x) - 10) / 20) + Math.max(0, (-px.z - 25) / 30));
+      const profile = {
+        wind: interior ? 0.15 : 0.35 + elev * 0.65,
+        leaves: interior ? 0.1 : 0.3 + forest * 0.6,
+        stream: Math.max(0, 1 - sd / 22) * (interior ? 0.2 : 1),
+        trickle: Math.max(0, 1 - pd / 2.2) * 0.4,
+        birds: interior ? 0.3 : 1,
+        frogs: Math.max(0, 1 - (pd - 1) / 3),
+        room: interior ? 1 : 0,
+        muffled: interior,
+      };
+      audio.setScene(profile, this.world.audioEnv?.() || { daylight: this.world.atm.daylight, rain: this.world.atm.rain, wind: this.world.atm.wind, night: game.s.time >= 3 || game.s.time === 0, time: game.s.time });
+      // stereo position of the stream relative to where you face
+      let best = null, bd = Infinity;
+      for (const [x, z] of STREAM) { const d = Math.hypot(x - px.x, z - px.z); if (d < bd) { bd = d; best = [x, z]; } }
+      const ang = Math.atan2(-(best[0] - px.x), -(best[1] - px.z)) - px.yaw;
+      audio.setStreamPan(-Math.sin(ang));
+    }
+
+    // save position now and then
+    this._acc.save += dt;
+    if (this._acc.save > 3 && this.mode === 'explore') { this._acc.save = 0; this.savePos(); }
+
+    eng.render();
+    if (this.mode === 'explore') this.layoutIcons();
+    else if (this.hud.icons.size && this.mode !== 'dialog') this.hud.layout([], null);
+  }
+
+  layoutIcons() {
+    const cam = this.engine.camera;
+    const px = this.player;
+    const cond = this.cond;
+    const insideNow = !!this.zone?.interior;
+    const v = new THREE.Vector3();
+    const items = [];
+    const near = [];
+    for (const it of this.world.interactables) {
+      if (it.visible && !it.visible(cond)) continue;
+      const p = this.itemPos(it);
+      const d = Math.hypot(p.x - px.x, p.z - px.z);
+      if (d > 16) continue;
+      // things inside a building only show from inside (and vice versa), except doorways
+      const itInside = ['cushion', 'altar', 'bowlBell', 'callig', 'futon', 'desk', 'smallBell', 'note', 'darkroom'].includes(it.id);
+      const isDoor = it.id === 'hallDoor' || it.id === 'hutDoor';
+      if (isDoor ? insideNow : itInside !== insideNow) continue;
+      if (d < 7) near.push({ it, d });
+      v.set(p.x, p.y, p.z).project(cam);
+      if (v.z > 1 || Math.abs(v.x) > 1.05 || Math.abs(v.y) > 1.05) continue;
+      items.push({ it, x: (v.x * 0.5 + 0.5) * innerWidth, y: (1 - (v.y * 0.5 + 0.5)) * innerHeight, dist: d });
+    }
+    near.sort((a, b) => a.d - b.d);
+    this.nearest = near[0]?.it || null;
+    this.hud.layout(items, this.nearest);
+    this.hud.setNearby(near.map((n) => n.it));
   }
 }
 
 const g = new Game();
 g.boot();
 window.__game = g;
+void KINDS;

@@ -58,6 +58,11 @@ export function openSettings(root, onAudioNeeded) {
     slider('ambience', 'Environment (wind, water, birds)'),
     slider('effects', 'Footsteps and camera'),
     slider('bell', 'Bells'),
+    toggle('musicOn', 'Music', 'Gentle generated music that follows the time of day.'),
+    slider('music', 'Music volume'),
+    h('h3', {}, 'The bell of mindfulness'),
+    seg('bellFrequency', [['off', 'Off'], ['occasional', 'Now and then'], ['frequent', 'Often']], 'How often the bell sounds', 'When it sounds, the valley pauses for three breaths.'),
+    toggle('pauseForBell', 'Pause for three breaths', 'Turn off to keep walking while the bell sounds.'),
     toggle('captions', 'Sound captions', 'Shows important sounds as text, like a distant bell.'),
     h('h3', {}, 'Comfort & accessibility'),
     seg('reducedMotion', [['system', 'Follow device'], ['on', 'On'], ['off', 'Off']], 'Reduced motion', 'Calmer movement: no drifting view, slower particles, quicker fades.'),
@@ -66,9 +71,11 @@ export function openSettings(root, onAudioNeeded) {
     toggle('plainFont', 'Plain, very legible font'),
     seg('hints', [['on', 'Gentle'], ['subtle', 'Faint'], ['off', 'Hidden']], 'Markers on things you can approach', 'Hidden markers can still be reached with Tab.'),
     slider('lookSensitivity', 'Look sensitivity', 0.4, 2, 0.1),
+    slider('fov', 'Field of view (wider can feel more comfortable)', 50, 80, 1),
+    toggle('autoTurn', 'Turn to face where you walk', 'When off, the view only turns when you drag.'),
     toggle('invertLook', 'Invert drag direction'),
     toggle('momentum', 'Gliding look (momentum)'),
-    toggle('breathGuide', 'Breathing guide while sitting'),
+    toggle('breathGuide', 'Breathing circle while sitting'),
     toggle('instantReview', 'See photos right away', 'Otherwise, film is developed each evening in your room.'),
     h('h3', {}, 'Visual quality'),
     seg('quality', [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']], 'Detail', 'Lower settings run more smoothly on older phones. Changes apply fully when you next move.'),
@@ -104,15 +111,25 @@ export function confirmBox(root, title, text, yes, no = 'Cancel') {
 }
 
 export function openAbout(root) {
+  const row = (kind, iconName, text) => [h('span', { class: `poi k-${kind}` }, h('span', { class: 'mark' }, icon(iconName))), h('span', {}, text)];
   const body = h('div', {},
-    h('p', {}, 'The Quiet Path is a small, unhurried game about attention. There is nothing to win and nowhere you need to be. Wander, help if you like, take photographs, or simply sit.'),
-    h('h3', {}, 'How to play'),
-    h('p', {}, 'Drag (or use ← →) to look around. Tap glowing marks to approach things; diamond marks are paths. The camera button (C) raises your camera: drag to frame, pinch or scroll to zoom, tap to focus, press the shutter (Space).'),
-    h('p', {}, 'Time moves only when you choose: sit until the next bell, rest, or ring the small bell in your room. Each evening you can develop your film in the darkroom corner of your room.'),
+    h('p', {}, 'The Quiet Path is a small, unhurried game about attention, set in a fictional practice centre in the spirit of the Plum Village tradition. There is nothing to win and nowhere you need to be. Wander, help if you like, take photographs, or simply sit.'),
+    h('h3', {}, 'Symbols'),
+    h('div', { class: 'legend' },
+      ...row('look', 'eye', 'Look at something more closely'),
+      ...row('go', 'walk', 'Go somewhere — signposts and doorways walk you there'),
+      ...row('sit', 'lotus', 'Sit for a while'),
+      ...row('talk', 'talk', 'Talk with someone'),
+      ...row('bell', 'bell', 'A bell you can invite'),
+    ),
+    h('h3', {}, 'How to move'),
+    h('p', {}, 'Tap or click the ground to stroll there. Drag to look around. On a keyboard: W A S D or arrow keys to walk, E to use the nearest thing, C for the camera, P for the album, Esc for the menu. Everything nearby is also listed in the “Nearby” buttons at the bottom left.'),
+    h('h3', {}, 'The bell'),
+    h('p', {}, 'Now and then a bell sounds from the tower. Everyone in the valley stops where they are and enjoys three breaths — you’re invited to as well. You can change how often this happens in Settings.'),
     h('h3', {}, 'About the setting'),
-    h('p', {}, 'The monastery is fictional, drawing on Japanese Zen temples. Practices are shown as simply and respectfully as we can; notes on sources are in the project’s research file.'),
+    h('p', {}, 'The centre, its people and its words are fictional and written for this game. The practices — stopping for the bell, walking meditation, tea, silence — are drawn from the Plum Village tradition as respectfully as we can; notes and sources are in the project’s research file.'),
     h('h3', {}, 'Credits'),
-    h('p', {}, 'All art is painted procedurally in code, and all sound is synthesised in your browser. Fonts: Cormorant Garamond, Source Sans 3 and Atkinson Hyperlegible (SIL Open Font License).'),
+    h('p', {}, 'Made with Three.js. All art is built and painted in code, and all sound and music is generated in your browser. Fonts: Cormorant Garamond, Source Sans 3 and Atkinson Hyperlegible (SIL Open Font License).'),
   );
   return panel(root, 'About', body);
 }
@@ -191,7 +208,7 @@ export function metaLine(ph) {
   return `${placeName(ph.place)} · ${TIME_LABELS[ph.time] || ''} · ${ph.weather}${ph.prompt ? ` · keeping in mind: “${ph.prompt}”` : ''}`;
 }
 function placeName(id) {
-  return { gate: 'The gate', garden: 'Moss garden', pond: 'The pond', zendo: 'Meditation hall', quarters: 'Your room', bowlCloseup: 'Moss garden', lanternCloseup: 'Moss garden' }[id] || id;
+  return { gate: 'The mountain gate', forest: 'The forest path', tower: 'The bell tower', hallYard: 'By the meditation hall', hall: 'The meditation hall', pond: 'The lotus pond', tea: 'The tea house', orchard: 'The plum orchard', hut: 'Your hut', hutYard: 'By your hut', valley: 'The valley', garden: 'Moss garden', zendo: 'Meditation hall', quarters: 'Your room' }[id] || id;
 }
 export function describePhoto(ph) {
   const subj = ph.subjects?.length ? ph.subjects.slice(0, 2).join(' and ') : 'a quiet corner';
@@ -234,8 +251,8 @@ async function downloadSheet(day, items) {
 export function titleScreen(root, { hasSave, onBegin, onContinue }) {
   const el = h('div', { class: 'title-screen', role: 'dialog', 'aria-label': 'The Quiet Path' });
   let sound = !settings.get('muted');
-  const sOn = h('button', { 'aria-pressed': String(sound), onclick: () => setSound(true) }, 'Sound on');
-  const sOff = h('button', { 'aria-pressed': String(!sound), onclick: () => setSound(false) }, 'Sound off');
+  const sOn = h('button', { 'aria-pressed': String(sound), onclick: () => setSound(true) }, '🔈 Sound on');
+  const sOff = h('button', { 'aria-pressed': String(!sound), onclick: () => setSound(false) }, 'Silent');
   const setSound = (v) => {
     sound = v;
     sOn.setAttribute('aria-pressed', String(v));
@@ -247,13 +264,13 @@ export function titleScreen(root, { hasSave, onBegin, onContinue }) {
   const go = (fn) => { settings.set('muted', !sound); el.remove(); fn(); };
   el.append(
     h('h1', {}, 'The Quiet Path'),
-    h('p', { class: 'sub' }, 'a small mountain monastery'),
+    h('p', { class: 'sub' }, 'a small practice centre in a mountain valley'),
     h('div', { class: 'actions' },
       hasSave ? h('button', { class: 'primary', onclick: () => go(onContinue) }, 'Continue your stay') : null,
       h('button', { class: hasSave ? '' : 'primary', onclick: () => go(onBegin) }, hasSave ? 'Begin a new stay' : 'Begin'),
       h('div', { class: 'sound-choice', role: 'group', 'aria-label': 'Sound' }, sOn, sOff),
     ),
-    h('p', { class: 'small' }, 'Drag to look around. Tap what catches your eye. Nothing here is timed; take as long as you like. Headphones are lovely, but optional.'),
+    h('p', { class: 'small' }, 'Tap the ground to walk there; drag to look around. Nothing here is timed; take as long as you like. Sound is part of the experience — headphones are lovely, but optional.'),
   );
   root.append(el);
   setTimeout(() => el.querySelector('button')?.focus(), 50);

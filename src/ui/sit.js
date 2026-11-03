@@ -2,13 +2,9 @@
 // and now and then a thought drifts in. Leave it, or follow it.
 import { h, wait } from './dom.js';
 import { settings } from '../core/settings.js';
-import { THOUGHTS, thoughtFollow } from '../story/content.js';
+import { THOUGHTS, thoughtFollow, SIT_OPENINGS } from '../story/content.js';
 
-const OPENINGS = {
-  zendo: 'You bow to your cushion, sit, and settle. The hall is very quiet.',
-  veranda: 'You sit on the edge of the veranda, feet above the moss. The garden goes on doing what it does.',
-  pond: 'You sit on the flat stone. The water moves a little, then is still.',
-};
+const OPENINGS = SIT_OPENINGS;
 
 export class Sitting {
   constructor(root, { dialog, whisper, audio }) {

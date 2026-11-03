@@ -1,45 +1,42 @@
 # Cultural research notes
 
-The monastery is **fictional**. It is modelled loosely on small Japanese Zen (mostly Sōtō-flavoured) mountain temples. This file lists what the game currently shows, what has been checked, and what still needs checking. Please verify each **To check** item with a reliable source (books, temple websites, a practitioner) before v3's cultural review pass.
+From v2, The Quiet Path is set in a **fictional practice centre in the spirit of the Plum Village tradition**, the community founded by the Vietnamese Zen teacher Thich Nhat Hanh. The centre, its people (including "Sister Hien") and every phrase in the game are invented for this project. This file lists what the game shows, what still needs checking, and the rules we follow.
 
 Status key: ✅ reasonably confident · ⚠️ to check · ✏️ deliberate simplification
 
-## Things currently in the game
+## Principles
+- **Original words only.** Thich Nhat Hanh's books, practice verses (gathas) and calligraphies are copyrighted and closely associated with him. The game doesn't quote or reproduce them; its brushed phrases and bell wish are original.
+- **No real people or branding.** We don't depict Thich Nhat Hanh, real monastics or real centres, and don't use the Plum Village name or logo inside the game. (The README and About describe the setting as being "in the spirit of" the tradition.)
+- **Experience over explanation.** Practices are shown and briefly explained, never scored or required. Enlightenment is never a goal or a reward.
+- **Ordinary people.** Monastics and lay friends are ordinary people doing ordinary things, not mystical props.
 
-| Detail | Where | Status | Notes / what to verify |
+## What the game currently shows
+
+| Detail | Where | Status | Notes / to verify |
 |---|---|---|---|
-| Temple gate (sanmon / smaller mon) with a plain, weathered plaque | Gate | ✏️ | The plaque is left blank on purpose to avoid inventing fake characters. |
-| Stone figure with a red bib and a flower offering (Jizō) | Gate | ⚠️ | Jizō statues with red bibs are common at Japanese roadsides and temples. Check what the bibs mean (protection of children and travellers; often linked to mizuko) and keep the text gentle and non-explanatory. |
-| Bowing with palms together (gasshō) | Gate, altar | ⚠️ | Check when and how guests usually bow at a temple and to an altar. The game never requires it. |
-| Notice from "the guest master" | Gate | ⚠️ | The guest-receiving officer in Zen monasteries is often called *shika* (知客). Confirm before using the term; for now only the English role is used. |
-| Wooden board (han) with the "birth and death" inscription | Garden | ⚠️ | The han is commonly inscribed with a verse like 生死事大 無常迅速 各宜醒覚 慎勿放逸. Translations vary. Compare several published translations and credit one. The game says "only those whose job it is strike it": verify. |
-| Han struck slowly, then faster, before sitting | Garden, audio | ⚠️ | The real pattern is more structured (three rounds that speed up) and differs by temple. Simplified for now. |
-| Stone water basin (tsukubai) with bamboo spout and ladle | Garden | ✅ / ⚠️ | Mostly a tea-garden feature, but common in temple gardens. Check the hand-rinsing etiquette in the text. |
-| Stone lantern (Kasuga-style tōrō) | Garden, gate | ✅ | Decorative. The gate lanterns are shown lit at night (artistic licence). |
-| Meditation hall (zendō / sōdō) with raised platforms (tan) and black cushions (zafu) | Hall | ⚠️ | Check the layout. In Sōtō practice people sit facing the wall; in Rinzai they face the room. The text says "facing the wall" (Sōtō). |
-| Altar with a seated figure in shadow | Hall | ⚠️ | Many zendō enshrine Mañjuśrī (Monju Bosatsu). The figure is deliberately left vague and dim. Never use it as a casual prop. |
-| Card: shoes outside; photos welcome when no one is sitting, never of the altar during ceremony | Hall | ✏️ | Invented, plausible guest etiquette. Check against real temple guest guidelines. |
-| Incense, candle, flowers on the altar | Hall | ✅ | Common offerings. |
-| Kitchen and cook (tenzo); the cook's note | Garden, room | ⚠️ | Read Dōgen's *Tenzo Kyōkun* (Instructions for the Cook) before writing more kitchen content. The cook is unseen and kind; avoid stereotypes. |
-| "Some things are worth mending slowly" (cook's note) | Room | ✏️ | Deliberately avoids naming kintsugi. **Kintsugi is a lacquer-repair craft, not a Buddhist practice.** If the mending storyline uses it (v2+), present it as craft, not as "Zen". |
-| Tokonoma alcove with an ink painting and a single flower | Room | ✅ | The painting has no writing on purpose. |
-| Futon, tatami, andon lamp, shoji | Room | ✅ | |
-| Returning thoughts while sitting; "notice you've wandered, come back" | Sitting | ⚠️ | This matches common meditation instruction. Keep it non-judgemental, and avoid claiming it is *the* Zen method. Shikantaza (just sitting) is not focused breath-counting. |
-| Breathing guide (optional, off by default) | Sitting | ✏️ | A comfort feature, not presented as a traditional practice. |
-| Fireflies, irises, water lilies, koi, maples in late spring | Pond | ⚠️ | Check that the seasonal mix is plausible (late May–June, rainy season). |
+| Stopping for **three breaths** whenever a bell sounds | Everywhere | ✅ / ⚠️ | A core Plum Village practice (the "bell of mindfulness"). Check the usual wording: "stop, breathe in and out three times, then continue". |
+| **"Inviting"** the bell rather than striking it; "waking" the bell with a light touch before the full sound | Tower, hall | ✅ / ⚠️ | Terms used in the tradition. Verify the waking-touch practice and who usually invites the large bell. The game lets guests invite the tower bell; check whether that's plausible, or limit it to set times. |
+| Tower bell hung in an open tower and sounded with a hanging wooden log | Tower | ⚠️ | Common in Vietnamese temples. Confirm for Plum Village centres. |
+| Bell bowl on a cushion near the altar, with a small wooden striker | Hall | ✅ | Typical meditation hall arrangement. |
+| **Walking meditation** in a slow, silent line around the pond | Pond | ✅ / ⚠️ | Outdoor walking meditation is a daily practice. Check its usual pace and form (often not strictly single-file). |
+| **Noble silence**; cooks practising silence | Kitchen | ⚠️ | Check how noble silence is described (usually from evening until after breakfast). |
+| Tea on the terrace; drinking tea slowly | Tea house | ✅ / ⚠️ | Tea meditation is a practice. Our scene is informal tea, not the formal ceremony. |
+| **Monastics in brown robes**, some with conical hats outdoors; addressed as "Sister" or "Brother" | People | ⚠️ | Check robe colours (brown is everyday wear) and forms of address. "Thầy" is used for teachers and monks; we don't use it yet. |
+| Joining palms "like a lotus bud" and bowing | Altar, greetings | ✅ | A common Plum Village description of the gesture. |
+| Altar with a small Buddha figure, candle, flowers, incense | Hall | ✅ / ⚠️ | Keep it simple and respectful. The figure is generic and small. |
+| Cushions in rows facing a centre aisle | Hall | ⚠️ | Check typical hall layouts (rows facing each other, or facing the altar). |
+| Farmhouse tea house, plum orchard, lavender | Lower valley | ✏️ | A nod to the French countryside setting of the original community. The plums and lavender are artistic. |
+| Vietnamese-style curved roofs on the gate and tower | Gate, tower | ✏️ | Simplified forms. Check that the proportions read as Vietnamese, not Japanese or Chinese. |
+| "Sister Hien" | People | ⚠️ | A fictional Dharma name. Make sure it doesn't match a well-known real monastic; consider a different name if it does. |
+| Broken bowl, "worth mending slowly" | Story | ✏️ | Deliberately doesn't name kintsugi, which is a Japanese lacquer craft, not a Plum Village or Buddhist practice. |
+| Returning thoughts while sitting; "notice you've wandered, come back, without scolding yourself" | Sitting | ✅ | A gentle, non-judgemental framing consistent with the tradition's emphasis on kindness. |
 
-## Principles we follow
-- Themes come through **experience**: noticing, impermanence, care, letting go. There are no lectures.
-- Enlightenment is never a goal or a reward. Nothing scores practice.
-- Monks and staff are ordinary people doing ordinary work, not mystical props.
-- Don't use "zen" as a style buzzword in the game text.
-- No invented quotes. Any quoted teaching needs a source and a named translation. (Many "Buddha quotes" online are misattributed.)
-- Keep Japanese terms out of the main text unless they help. An optional glossary may come in v3.
+## Retired from v1 (Japanese Zen setting)
+Jizō statue, wooden han board and its inscription, tsukubai water basin, Sōtō/Rinzai seating questions, guest master (*shika*), tokonoma alcove. These are no longer in the game. Their notes are preserved in git history (`docs/RESEARCH.md` at the v1 merge).
 
 ## Sources to consult
-- Shunryu Suzuki, *Zen Mind, Beginner's Mind*
-- Dōgen, *Tenzo Kyōkun* (*Instructions for the Cook*), e.g. in Kazuaki Tanahashi (ed.), *Moon in a Dewdrop*
-- Sōtō Zen official English materials (sotozen.com): temple etiquette, zazen instructions
-- Guidelines for temple stays (shukubō) from Japanese temples and tourism bodies, e.g. Kōyasan
-- Mark Ravina / Gunter Nitschke for Japanese garden elements, or other garden histories
-- Optional: ask a teacher or practitioner to read the text (planned for v3/v4)
+- Plum Village official site and app (plumvillage.org): practice pages on the bell, walking meditation, eating and tea, noble silence, and monastic life.
+- Thich Nhat Hanh, *Present Moment Wonderful Moment* (the use of practice verses), and *The Miracle of Mindfulness*. For understanding only; don't quote in the game.
+- Thich Nhat Hanh, *Peace Is Every Step*.
+- Information pages from other centres in the tradition (e.g. Deer Park Monastery, Blue Cliff Monastery, Magnolia Grove) on retreat etiquette for guests.
+- Optional: ask someone who practises in the tradition to read the game's text before v4.

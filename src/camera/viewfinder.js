@@ -20,7 +20,7 @@ export class Viewfinder {
     this.el.append(...this.masks, this.frame, this.ring, this.info, this.promptEl,
       h('div', { class: 'vf-side' },
         h('button', { class: 'icon-btn', 'aria-label': 'Lower camera (Esc)', onclick: () => handlers.close() }, icon('close')),
-        h('button', { class: 'icon-btn', 'aria-label': 'Change focus: near, middle, far (F)', onclick: () => this.cycleFocus() }, icon('focus')),
+        h('button', { class: 'icon-btn', 'aria-label': 'Change focus: near, middle, far, or everything sharp (F). You can also tap something to focus on it.', onclick: () => this.cycleFocus() }, icon('focus')),
       ),
       h('div', { class: 'vf-controls' },
         h('div', { class: 'zoom' }, h('span', { 'aria-hidden': 'true' }, '−'), this.zoomInput, h('span', { 'aria-hidden': 'true' }, '+')),
@@ -59,7 +59,7 @@ export class Viewfinder {
     this.fy = Math.max(half, Math.min(1 - half, this.fy));
   }
   cycleFocus() {
-    const seq = [null, 0.85, 0.5, 0.15];
+    const seq = [null, 1.5, 6, 25];
     const i = seq.indexOf(this.focus);
     this.focus = seq[(i + 1) % seq.length];
     this.updateInfo();
@@ -105,7 +105,7 @@ export class Viewfinder {
   updateInfo(shots) {
     if (shots != null) this._shots = shots;
     const left = ROLL_SIZE - (this._shots ?? 0);
-    const f = this.focus == null ? 'auto focus' : this.focus > 0.7 ? 'focus: near' : this.focus > 0.3 ? 'focus: middle' : 'focus: far';
+    const f = this.focus == null ? 'everything sharp' : `focus ${this.focus < 10 ? this.focus.toFixed(1) : Math.round(this.focus)} m`;
     this.info.textContent = left > 0
       ? `${left} ${left === 1 ? 'frame' : 'frames'} left · ${this.zoom.toFixed(1)}× · ${f}`
       : 'Roll finished · a fresh roll waits for you tomorrow';
