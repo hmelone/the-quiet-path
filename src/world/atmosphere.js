@@ -16,8 +16,8 @@ const TIMES = {
     emis: 0, stars: 0, cloudCol: f('#f4f2ec'), mist: 0.3, daylight: 1, wind: 0.5,
   },
   afternoon: {
-    skyTop: f('#5b8ec6'), skyHor: f('#ebe5d3'), sunCol: f('#fff0c8'), sun: [0.66, 0.2], sunVis: 1,
-    tint: [1.03, 1.0, 0.92], fog: f('#d8d8cc'), fogAmt: 0.22, exposure: 1.02, sat: 1.04,
+    skyTop: f('#5b8ec6'), skyHor: f('#cbd9ce'), sunCol: f('#fff0c8'), sun: [0.66, 0.2], sunVis: 1,
+    tint: [1.03, 1.0, 0.92], fog: f('#b1c8c5'), fogAmt: 0.22, exposure: 1.02, sat: 1.04,
     emis: 0, stars: 0, cloudCol: f('#f7f1e2'), mist: 0.12, daylight: 1, wind: 0.7,
   },
   evening: {

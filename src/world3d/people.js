@@ -26,6 +26,7 @@ export function figure(seed, { kind = 'monastic', seated = false, hat = false } 
   const skin = rng.pick(SKIN);
   const group = new THREE.Group();
   const parts = [];
+  let sleeve = '#79543e';
   if (kind === 'monastic') {
     const robe = robeGeo(seated);
     parts.push(colorize(robe, (x, y, z, c) => c.set('#7a5236').lerp(new THREE.Color('#9a6c48'), Math.max(0, z) * 0.6 + y * 0.08)));
@@ -36,6 +37,7 @@ export function figure(seed, { kind = 'monastic', seated = false, hat = false } 
     parts.push(colorize(sash, '#5e3e28'));
   } else {
     const [top, bottom] = rng.pick(LAY);
+    sleeve = top;
     if (seated) {
       const legs = new THREE.CapsuleGeometry(0.13, 0.42, 4, 8).rotateZ(Math.PI / 2).translate(0, 0.14, 0.12);
       parts.push(colorize(legs, bottom));
@@ -50,16 +52,37 @@ export function figure(seed, { kind = 'monastic', seated = false, hat = false } 
       parts.push(colorize(torso, top));
     }
   }
+  // Shoulders, sleeves and hands break up the old peg-shaped silhouette.
+  // These are fictional people: quiet everyday poses, no symbolic attributes.
+  for (const side of [-1, 1]) {
+    const arm = new THREE.CapsuleGeometry(kind === 'monastic' ? 0.10 : 0.075, seated ? 0.24 : 0.38, 3, 7);
+    arm.rotateZ(side * (seated ? 0.55 : 0.16));
+    arm.rotateX(seated ? -0.75 : -0.18);
+    arm.translate(side * (seated ? 0.23 : 0.25), seated ? 0.57 : 1.12, seated ? 0.19 : 0.06);
+    parts.push(colorize(arm, sleeve));
+    const hand = new THREE.SphereGeometry(0.055, 7, 5).scale(0.8, 1.2, 1);
+    hand.translate(side * (seated ? 0.15 : 0.20), seated ? 0.40 : 0.85, seated ? 0.31 : 0.14);
+    parts.push(colorize(hand, skin));
+    if (!seated) {
+      const foot = new THREE.SphereGeometry(0.085, 7, 5).scale(0.75, 0.5, 1.8);
+      foot.translate(side * 0.12, 0.04, 0.065 + side * 0.025);
+      parts.push(colorize(foot, '#3f342e'));
+    }
+  }
   const headY = seated ? 0.98 : 1.6;
-  const head = new THREE.SphereGeometry(0.115, 12, 10).scale(0.92, 1.05, 1);
+  parts.push(colorize(new THREE.CylinderGeometry(0.065, 0.075, 0.15, 7).translate(0, headY - 0.14, 0), skin));
+  const head = new THREE.SphereGeometry(0.14, 12, 10).scale(0.9, 1.12, 1);
   head.translate(0, headY, 0);
   parts.push(colorize(head, skin));
+  // A nose and ears make the facing direction readable at walking distance.
+  parts.push(colorize(new THREE.SphereGeometry(0.035, 6, 5).scale(0.7, 0.8, 1.2).translate(0, headY - 0.015, 0.13), skin));
+  for (const side of [-1, 1]) parts.push(colorize(new THREE.SphereGeometry(0.033, 6, 5).scale(0.6, 1.1, 0.8).translate(side * 0.126, headY - 0.015, 0), skin));
   if (kind === 'lay' && rng.f() < 0.85) {
-    const hair = new THREE.SphereGeometry(0.122, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.55).translate(0, headY + 0.01, -0.01);
+    const hair = new THREE.SphereGeometry(0.147, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.55).translate(0, headY + 0.01, -0.01);
     parts.push(colorize(hair, rng.pick(['#2a221c', '#4a3626', '#8a6a4a', '#b8b0a4'])));
   }
   if (hat) {
-    const h = new THREE.ConeGeometry(0.3, 0.2, 14).translate(0, headY + 0.17, 0);
+    const h = new THREE.ConeGeometry(0.3, 0.2, 14).translate(0, headY + 0.21, 0);
     parts.push(colorize(h, '#d9c79a'));
   }
   const body = new THREE.Mesh(merge(parts), paint({}));
@@ -67,6 +90,7 @@ export function figure(seed, { kind = 'monastic', seated = false, hat = false } 
   group.add(body);
   group.userData.body = body;
   group.userData.seated = seated;
+  group.scale.set(rng.range(0.94, 1.07), rng.range(0.94, 1.06), rng.range(0.95, 1.05));
   return group;
 }
 
@@ -114,6 +138,12 @@ export class People {
   }
 
   clear() {
+    // Daily routines rebuild the figures; release their unique GPU resources.
+    this.group.traverse((obj) => {
+      if (!obj.isMesh) return;
+      obj.geometry.dispose();
+      obj.material.dispose();
+    });
     this.group.clear();
     this.list = [];
   }

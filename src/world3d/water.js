@@ -46,8 +46,8 @@ vec2 rings(vec2 p) {
 void main() {
   vec2 p = vWorld.xz;
   vec2 flow = vec2(0.0, uTime * uFlow);
-  vec2 n = vec2(vnoise(p * 0.9 + uTime * 0.15 + flow) - 0.5, vnoise(p * 0.8 - uTime * 0.12 + 5.0 + flow) - 0.5) * 0.35;
-  n += vec2(vnoise(p * 3.1 + uTime * 0.4) - 0.5, vnoise(p * 2.7 - uTime * 0.35 + 9.0) - 0.5) * 0.12;
+  vec2 n = vec2(vnoise(p * 0.9 + uTime * 0.15 + flow) - 0.5, vnoise(p * 0.8 - uTime * 0.12 + 5.0 + flow) - 0.5) * 0.11;
+  n += vec2(vnoise(p * 3.1 + uTime * 0.4) - 0.5, vnoise(p * 2.7 - uTime * 0.35 + 9.0) - 0.5) * 0.035;
   n += rings(p) * 0.5 * uRain;
   vec3 N = normalize(vec3(n.x, 1.0, n.y));
   vec3 V = normalize(cameraPosition - vWorld);
@@ -55,10 +55,15 @@ void main() {
   vec3 R = reflect(-V, N);
   vec3 sky = mix(uSkyHor, uSkyTop, smoothstep(0.0, 0.6, R.y));
   vec3 base = mix(uShallow, uDeep, 0.6 + 0.4 * vnoise(p * 0.2));
-  vec3 col = mix(base, sky, 0.25 + fres * 0.65);
+  // Sparse, soft reed shadows leave open water clear enough to watch fish.
+  float shade = smoothstep(0.5, 0.85, vnoise(p * 0.26 + 3.0));
+  base *= 1.0 - shade * 0.14;
+  vec3 col = mix(base, sky, 0.22 + fres * 0.52);
   float spec = pow(max(dot(R, normalize(uSunDir)), 0.0), 120.0) * uSunVis;
   col += uSunCol * spec * 1.2;
-  gl_FragColor = vec4(col * uExposure, 0.92);
+  // Transparent from above, reflective at grazing angles. Fish are ordinary
+  // scene geometry, so the same compositing also works in film render targets.
+  gl_FragColor = vec4(col * uExposure, 0.32 + fres * 0.53);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
   #include <fog_fragment>

@@ -115,7 +115,7 @@ export function surfaceAt(x, z) {
 
 const C = (h) => new THREE.Color(h);
 const COL = {
-  grass: C('#6f8f45'), meadow: C('#93a85a'), moss: C('#4f7037'), forest: C('#3f5a33'),
+  grass: C('#6d876c'), meadow: C('#98a27a'), moss: C('#526f5d'), forest: C('#3f5a4d'),
   rock: C('#7d7a70'), gravel: C('#b8ac94'), stone: C('#9a958a'), earth: C('#7a6448'),
   mud: C('#5d5340'), bed: C('#384a40'), grasspath: C('#a3a86c'),
 };

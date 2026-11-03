@@ -240,21 +240,61 @@ html[data-motion='reduced'] .dialog { animation: none; }
 .seg button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); }
 .toggle[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); }
 
-/* title */
+/* title: original still artwork, composed separately for wide and portrait screens. */
 .title-screen {
-  position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; padding: 24px; gap: 10px;
-  background: radial-gradient(ellipse at 50% 60%, rgba(20, 26, 23, 0.1), rgba(20, 26, 23, 0.55));
-  animation: fadein 1.5s ease;
+  position: fixed; inset: 0; isolation: isolate; overflow: auto;
+  display: flex; align-items: center; padding: max(32px, var(--safe-t)) max(6vw, var(--safe-r));
+  background: #264747; color: #fff6e4; animation: fadein 1s ease;
 }
+.title-art, .title-art img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.title-art { z-index: -2; pointer-events: none; }
+.title-art img { object-fit: cover; object-position: center; }
+.title-screen::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg, rgba(12, 35, 36, .67), rgba(12, 35, 36, .23) 44%, transparent 75%);
+}
+.title-content { width: min(470px, 45%); margin-top: 6vh; }
+.title-heading { margin-bottom: 30px; }
+.title-eyebrow { margin: 0 0 14px; font-size: .72rem; text-transform: uppercase; letter-spacing: .25em; color: #f6d6bf; }
 .title-screen h1 {
-  font-family: var(--serif); font-weight: 500; font-size: clamp(2.6rem, 9vw, 5rem); margin: 0;
-  letter-spacing: 0.04em; text-shadow: 0 2px 24px rgba(0, 0, 0, 0.5);
+  font-family: var(--serif); font-weight: 500; font-size: clamp(2.8rem, 5.5vw, 5.2rem); line-height: 1.08;
+  margin: 0; letter-spacing: -.025em; text-wrap: balance; text-shadow: 0 2px 20px #153232;
 }
-.title-screen .sub { font-family: var(--serif); font-style: italic; font-size: 1.2em; margin: 0 0 18px; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.7); }
-.title-screen .actions { display: flex; flex-direction: column; gap: 10px; width: min(320px, 100%); }
-.title-screen .small { font-size: 0.85em; color: var(--ink-soft); margin-top: 10px; max-width: 420px; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8); }
+.title-screen .sub { font-family: var(--serif); font-style: italic; font-size: 1.2rem; margin: 15px 0 0; color: #f0e1cc; }
+.title-screen .actions { display: flex; flex-direction: column; gap: 10px; max-width: 295px; }
+.title-screen .actions button { min-height: 52px; border-color: #d3c2a7; background: rgba(21, 48, 45, .92); }
+.title-screen .actions button.primary { background: #f0dfb7; color: #243d37; border-color: #f0dfb7; }
+.title-screen .small { font-size: .78rem; margin: 18px 0 0; max-width: 300px; color: #eee4d2; }
 .sound-choice { display: flex; gap: 8px; justify-content: center; }
+.title-screen .sound-choice { justify-content: flex-start; margin-top: 16px; }
+.title-screen .sound-choice button { min-height: 44px; padding: .35em .8em; font-size: .78rem; background: rgba(21, 48, 45, .92); }
+.title-screen .sound-choice button.primary { background: #cad4bd; color: #243d37; }
+html[data-motion='reduced'] .title-screen { animation: none; }
+@media (prefers-reduced-motion: reduce) { .title-screen { animation: none; } }
+@media (max-aspect-ratio: 4/5) {
+  .title-screen { padding: max(20px, var(--safe-t)) max(22px, var(--safe-r)) max(20px, var(--safe-b)); }
+  .title-screen::before { background: linear-gradient(0deg, rgba(12, 35, 36, .87), transparent 29%, rgba(12, 35, 36, .05) 48%, rgba(12, 35, 36, .3) 75%, transparent); }
+  .title-content { width: 100%; min-height: 100%; margin: 0; align-self: stretch; display: flex; flex-direction: column; justify-content: space-between; text-align: center; }
+  .title-heading { margin: 18vh 0 0; }
+  .title-eyebrow { margin-bottom: 10px; font-size: .65rem; }
+  .title-screen h1 { font-size: clamp(2.45rem, 11vw, 4.5rem); }
+  .title-screen .sub { font-size: 1.05rem; margin-top: 10px; }
+  .title-controls { margin-top: 20vh; }
+  .title-screen .actions { max-width: 320px; margin: auto; }
+  .title-screen .sound-choice { justify-content: center; margin-top: 10px; }
+  .title-screen .small { margin: 10px auto 0; font-size: .7rem; }
+}
+@media (max-height: 540px) and (min-aspect-ratio: 4/5) {
+  .title-screen { padding-block: 15px; }
+  .title-content { margin-top: 0; width: 48%; }
+  .title-heading { margin-bottom: 16px; }
+  .title-eyebrow { margin-bottom: 6px; }
+  .title-screen h1 { font-size: clamp(2.2rem, 5vw, 3.3rem); }
+  .title-screen .sub { margin-top: 7px; font-size: 1rem; }
+  .title-screen .actions { flex-direction: row; max-width: none; }
+  .title-screen .actions button { min-height: 46px; }
+  .title-screen .small { display: none; }
+}
 
 /* viewfinder */
 .viewfinder { position: fixed; inset: 0; pointer-events: none !important; }

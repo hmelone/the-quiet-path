@@ -42,9 +42,9 @@ function mistBanks() {
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0.5, fog: true });
   const group = new THREE.Group();
   const rng = new Rng('mist');
-  for (let i = 0; i < 46; i++) {
+  for (let i = 0; i < 28; i++) {
     const s = new THREE.Sprite(mat);
-    const x = rng.range(-70, 70), z = rng.range(-85, 60);
+    const x = rng.pick([-1, 1]) * rng.range(35, 85), z = rng.range(-85, 15);
     s.position.set(x, heightAt(x, z) + rng.range(1.5, 5), z);
     s.scale.set(rng.range(18, 36), rng.range(5, 9), 1);
     s.userData.drift = rng.range(0.2, 0.6);
@@ -138,7 +138,7 @@ export class World {
     this.people.arrange(cond.time, cond.weather);
     this.animals.arrange(cond.time, cond.weather);
     const mm = this.mist.userData.mat;
-    mm.opacity = Math.min(0.85, this.atm.mist * 0.9 + (cond.weather === 'mist' ? 0.25 : 0));
+    mm.opacity = Math.min(0.36, this.atm.mist * 0.34 + (cond.weather === 'mist' ? 0.05 : 0));
     mm.color.setRGB(...this.atm.fog, THREE.SRGBColorSpace);
     this.rain.visible = this.atm.rain > 0;
     this.placeBowl(cond.flags);

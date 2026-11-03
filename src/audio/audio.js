@@ -281,6 +281,27 @@ class AudioEngine {
     this._burst(t, 0.012, rand(0.006, 0.014), 'bandpass', rand(2500, 5000), 1.5, 'ambience', rand(-1, 1), 0.1);
   }
 
+  // The forest scheduler still uses these voices. Keep their envelopes gentle
+  // and omit pitch sweeps, matching the quieter sound-effects update.
+  _woodpecker() {
+    const t0 = this.ctx.currentTime + 0.05;
+    const pan = rand(-0.9, 0.9);
+    const n = Math.floor(rand(10, 18));
+    for (let i = 0; i < n; i++) {
+      this._burst(t0 + i * 0.055, 0.025, 0.025 * (1 - i / (n * 1.3)),
+        'bandpass', rand(1300, 1500), 6, 'ambience', pan, 0.3);
+    }
+  }
+
+  _owl() {
+    const t = this.ctx.currentTime + 0.1;
+    const pan = rand(-0.8, 0.8), f = rand(360, 420);
+    // Fixed-frequency hoots: no rising or falling "boing" contour.
+    for (const [delay, dur, peak] of [[0, 0.35, 0.035], [0.9, 0.18, 0.025], [1.15, 0.5, 0.03]]) {
+      this._tone(t + delay, f, f, dur, peak, { pan, verb: 0.6 });
+    }
+  }
+
   /** Old wood settling: a soft, short rasp of filtered noise. */
   _creak() {
     const t = this.ctx.currentTime;
