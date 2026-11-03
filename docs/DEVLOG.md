@@ -43,8 +43,90 @@ Establish the feeling of the place, comfortable movement on phone and desktop, a
 - Painted art is stylised and fairly "clean". Richer brushwork and texture are a good candidate for later polish.
 - Tested in desktop Chromium and a phone-sized emulated touch screen. Still needs testing on real iOS Safari and Android devices.
 
-### Playtest notes
-*(Add your notes here after playing. See `PLAYTEST.md`.)*
+### Playtest notes (from your v1 play)
+- Would prefer the **Plum Village** tradition rather than Japanese Zen.
+- Wanted to **walk further through each scene** — the left/right panoramas felt too small.
+- **Icons were hard to tell apart**: looking at something vs. going somewhere.
+- Wanted **more people and animals** in the scenes.
+- **There was no sound.** (Cause: sound defaulted to off and the title screen preselected "Sound off".) Wanted nature sound matched to the weather, calm ambient music, and a meditation bell during the day.
 
-### Ideas for v2 (to be decided after playtesting)
-- Kitchen and forest path, the days-and-seasons system, a rain-interrupted plan, and the mending of the bowl.
+---
+
+## v2 — A walkable valley, in the spirit of Plum Village
+*Date: 2026-11-04*
+
+### Goals
+Respond to v1 playtesting: free walking in 3D, a Plum Village–style practice centre, clearer icons, people and wildlife, and real sound: nature, music and the bell of mindfulness. Plan: `docs/PLAN-v2.md`.
+
+### What changed
+- **3D world (Three.js), first-person.** One connected valley, about 2–3 minutes to walk across:
+  - mountain gate and cedar forest path;
+  - bell tower;
+  - meditation hall you can walk into (cushions, altar, brushed words);
+  - lotus pond with an arched bridge, koi and a heron;
+  - plum orchard;
+  - old stone farmhouse tea house with lavender rows;
+  - your hut (rest, desk, small bell, darkroom).
+- **Movement:**
+  - **Tap or click the ground to stroll there**, routed around trees, walls and water (A* on a walkability grid).
+  - **Drag to look** around.
+  - **W/A/S/D or arrows** on a keyboard.
+  - **Signposts** walk you to other areas.
+  - The view eases to face where you walk; this can be turned off.
+- **Distinct icons with labels:**
+  - 👁 look · 🚶 go (signposts and doors, in a green rounded square) · 🪷 sit · 💬 talk · 🔔 bell.
+  - The nearest thing always shows its label.
+  - A **Nearby** tray at the bottom left lists the same things as buttons (accessible, keyboard-friendly).
+  - There's an icon legend in About.
+- **People:** monastics in brown robes (some in conical hats) and lay friends:
+  - a slow walking-meditation line around the pond in the morning;
+  - someone sweeping the forest path;
+  - people sitting in the hall at dawn and evening;
+  - tea on the terrace in the afternoon;
+  - orchard work;
+  - someone reading by the pond.
+- **Someone to meet, Sister Hien** (fictional). She's at the bell tower in the morning, the tea house in the afternoon and the hall in the evening. Her conversations open over time: the bell practice, the bowl, an invitation to walking meditation.
+- **Wildlife:** deer at the forest edge (they drift away as you approach), a heron, koi, a sleeping cat on the hall veranda, orchard squirrels, birds overhead, fireflies on dry evenings.
+- **The bell of mindfulness:**
+  - The tower bell sounds now and then (setting: off / now and then / often). It's first "woken" with a soft touch.
+  - Everyone in the valley stops, the music softens, and you're offered three breaths before life continues. You can skip it, or turn the pause off in Settings.
+  - You can **invite the tower bell yourself**.
+- **Sound:**
+  - Sound is **on by default**, with a clear choice on the title screen and a mute button in the corner.
+  - Nature sound follows where you are and the weather: the stream (placed left or right of you), wind stronger higher up the valley, leaves in the forest, frogs near the pond in the evening and in rain, birds by time of day, crickets at night, rain muffled indoors, room tone inside.
+  - Footsteps change with the surface: gravel, stone, wood, grass.
+  - An automated check confirmed audio is actually produced.
+- **Generated ambient music:** slow pads with sparse gentle notes in a calm scale. The mood follows the time of day, and it ducks for bells and sitting. It has its own volume and on/off switch.
+- **Camera in 3D:**
+  - The photo is exactly the framed rectangle, at photo resolution.
+  - Zoom changes the lens.
+  - **Tap to focus** measures the real distance. Focus blur appears in the developed photo, like film, rather than in the live viewfinder.
+  - Photos note what's in frame, now including people and animals (e.g. "the walking meditation line", "a heron at the pond").
+- **Story rewritten** for a fictional Plum Village–style centre:
+  - original brushed phrases ("Slow down. You are here." · "Just this breath" · "Each step is enough" · "Be still, and listen" · "Here is a good place to begin");
+  - the bowl story moved to the tea house terrace, with three branches and consequences;
+  - tea, the kitchen in silence, the cat, the heron and more.
+- **Rain is visible** (falling streaks, rings on the pond), and mist banks drift through the valley.
+- **Performance:**
+  - Low / Medium / High / Auto tiers control pixel ratio, shadows, foliage and grass density, and photo size.
+  - Distant forest doesn't cast shadows.
+  - Auto quietly lowers the pixel ratio and then turns off shadows if frames are slow.
+- **Saving:** progress moves to a v2 format (position and facing), so v1 progress starts fresh. **Your photographs are kept.**
+- **Removed:** the v1 2.5D renderer and painted panoramas. They're still in git history at the v1 merge.
+
+### Technical decisions
+- **Three.js r187**, everything built in code: merged vertex-coloured geometry, instancing for trees and grass, toon-style soft shading bands, a custom sky dome and distant-mountain haze shader, and a custom water shader.
+- **Photos render offscreen** with depth, then one film pass handles depth of field, tone mapping, halation, vignette and grain.
+- **The sky and mountain shaders output linear colour**, so the screen and photos match.
+
+### Known limitations / to try on real devices
+- Tested in headless Chromium (software GPU), at desktop and phone sizes.
+  - The software GPU is very slow with shadows, so **frame rates there don't reflect real devices**. Please check smoothness on your phone; Settings → Visual quality → Low if needed.
+  - Not yet tested on real iOS Safari or Android.
+- The art is stylised and low-poly. Painterly brush textures and richer silhouettes are good candidates for v3.
+- People are simple shapes and don't yet walk between places over the day; they're arranged per time of day.
+- The kitchen and the tea house interior aren't walkable yet.
+- The `v1` tag couldn't be pushed from the session; it can be added as a GitHub release on the v1 merge commit.
+
+### Playtest notes
+*(Add your notes here after playing v2. See `PLAYTEST.md`.)*

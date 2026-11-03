@@ -202,6 +202,7 @@ class Game {
     try { await fn(this.api()); } finally {
       if (this.mode === 'dialog') this.mode = 'explore';
       this.hud.show(this.mode === 'explore');
+      if (this._pendingBreath) { this._pendingBreath = false; this.startBreath(); }
     }
   }
 
@@ -221,10 +222,16 @@ class Game {
     let stand = it.stand;
     if (it.dynamic) {
       const dx = this.player.x - pos.x, dz = this.player.z - pos.z, d = Math.hypot(dx, dz) || 1;
-      stand = [pos.x + (dx / d) * 1.6, pos.z + (dz / d) * 1.6];
+      stand = [pos.x + (dx / d) * 2.4, pos.z + (dz / d) * 2.4];
     }
     const act = () => {
       this.player.lookTarget = Math.atan2(-(pos.x - this.player.x), -(pos.z - this.player.z));
+      if (it.dynamic) {
+        // the person turns to face you
+        const f = it.dynamic();
+        if (f) f.rotation.y = Math.atan2(-(this.player.x - f.position.x), -(this.player.z - f.position.z));
+        this.player.pitch = -0.06;
+      }
       setTimeout(() => this.runScript(it.script), 350);
     };
     if (!stand || Math.hypot(stand[0] - this.player.x, stand[1] - this.player.z) < 1.2) act();
@@ -249,6 +256,16 @@ class Game {
     setTimeout(() => audio.bell(cap), 1600);
     this.bells.reset();
     audio.setDuck(0.25);
+    this.breathTarget = 1;
+    clearTimeout(this._breathEnd);
+    if (settings.get('pauseForBell') && this.mode === 'dialog' && source === 'you') {
+      this._pendingBreath = true; // start once the dialog closes
+      return;
+    }
+    this.startBreath();
+  }
+
+  startBreath() {
     const pauseBreath = settings.get('pauseForBell') && (this.mode === 'explore' || this.mode === 'camera');
     this.breathTarget = 1;
     clearTimeout(this._breathEnd);

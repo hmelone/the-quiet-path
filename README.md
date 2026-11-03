@@ -1,6 +1,6 @@
 # The Quiet Path
 
-A calm, painterly browser game set in a small mountain Zen monastery. Wander through a moss garden, past a pond, and into the meditation hall. Notice small things, take photographs with a film camera, help when something needs helping, or simply sit.
+A calm browser game set in a small mountain valley practice centre, in the spirit of the Plum Village tradition. Walk down from the mountain gate past a bell tower and a meditation hall, across a lotus pond, to an old farmhouse tea house and your hut. Notice small things, take photographs with a film camera, help when something needs helping, stop for the bell, or simply sit.
 
 There are no scores, timers, streaks or "enlightenment points". Time moves only when you choose.
 
@@ -20,11 +20,13 @@ Then open the address Vite prints (it ends in `/the-quiet-path/`).
 
 | | Touch | Keyboard & mouse |
 |---|---|---|
-| Look around | Drag / swipe | Drag, mouse wheel, or ← → / A D |
-| Approach something | Tap a glowing mark (◇ marks are paths) | Click, Tab to it, or E / Enter for the nearest |
-| Camera | Camera button; drag to frame, pinch to zoom, tap to focus, shutter | C; drag, scroll to zoom, click to focus, F cycles focus, Space for the shutter |
-| Sit | Tap a sitting spot | S near a sitting spot |
+| Walk | Tap the ground where you'd like to go | Click the ground, or W A S D / ↑ ↓ |
+| Look around | Drag | Mouse drag, or ← → |
+| Approach something | Tap its symbol, or use the **Nearby** buttons | Click it, Tab to Nearby, or E for the nearest |
+| Camera | Camera button; drag to frame, pinch to zoom, tap to focus, shutter | C; scroll to zoom, click to focus, F cycles focus, Space for the shutter |
 | Album / menu | Corner buttons | P / Esc |
+
+**Symbols:** 👁 look · 🚶 go (signposts and doors) · 🪷 sit · 💬 talk · 🔔 bell
 
 ## Deploying to GitHub Pages
 
@@ -36,14 +38,14 @@ If the repository has a different name, change `base` in `vite.config.js` to mat
 ## How it's built
 
 - **Vite + plain JavaScript**, with no framework.
-- **A custom WebGL2 compositor** (`src/render/`). Each place is a wide panorama of painted depth layers. One shader pass per layer handles parallax, colour grading for time and weather, swaying foliage, focus blur, water and mist.
-- **Procedural painting** (`src/paint/`). Every tree, stone, roof and moss cushion is painted with code-driven brush dabs at load time, so there are no image files to download.
-- **Procedural sound** (`src/audio/`). Wind, water, rain, birds, insects, bells and footsteps are all synthesised with Web Audio.
+- **Three.js 3D world** (`src/world3d/`). The valley, trees, buildings, water, people and animals are all built in code, with soft painterly shading, a painted sky, mist and time-of-day grading. There are no model or image files to download.
+- **Walking** uses a walkability grid with A* routing, so tap-to-walk finds its way around trees, walls and water.
+- **Procedural sound and music** (`src/audio/`). Wind, water, rain, birds, insects, bells, footsteps and calm ambient music are all generated with Web Audio.
 - **Saving.** Progress and settings go in `localStorage`; photographs go in IndexedDB.
 
 ## Project docs
 
-- [`docs/PLAN.md`](docs/PLAN.md): the agreed plan for all five iterations
+- [`docs/PLAN.md`](docs/PLAN.md): the original plan for all five iterations · [`docs/PLAN-v2.md`](docs/PLAN-v2.md): the v2 plan
 - [`docs/DEVLOG.md`](docs/DEVLOG.md): what changed in each iteration, and why
 - [`docs/PLAYTEST.md`](docs/PLAYTEST.md): questions to answer after each playtest
 - [`docs/RESEARCH.md`](docs/RESEARCH.md): cultural and religious details to check

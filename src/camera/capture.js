@@ -47,11 +47,11 @@ void main() {
   vec3 bloom = vec3(0.0);
   for (int i = 0; i < 8; i++) {
     float a = float(i) * 0.785;
-    bloom += max(aces(texture2D(tColor, vUv + vec2(cos(a), sin(a)) * 6.0 / uRes).rgb) - 0.75, 0.0);
+    bloom += max(aces(texture2D(tColor, vUv + vec2(cos(a), sin(a)) * 6.0 / uRes).rgb) - 0.88, 0.0);
   }
-  col += bloom / 8.0 * vec3(1.0, 0.45, 0.25) * 0.8;
-  col = mix(col, col * col * (3.0 - 2.0 * col), 0.25);
-  col = col * 0.94 + 0.03;
+  col += bloom / 8.0 * vec3(1.0, 0.45, 0.25) * 0.5;
+  col = mix(col, col * col * (3.0 - 2.0 * col), 0.35);
+  col = col * 0.97 + 0.012;
   col *= uStock;
   float d = length((vUv - 0.5) * vec2(uRes.x / uRes.y, 1.0) * 0.8);
   col *= 1.0 - 0.3 * smoothstep(0.3, 0.9, d);
