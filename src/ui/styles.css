@@ -387,3 +387,30 @@ html[data-motion='reduced'] .sit-layer .breath { animation: none; opacity: 0.4; 
 .walking button { min-height: 40px; padding: 0.3em 1em; background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 .walking .walk-hint { font-size: 0.8em; opacity: 0.75; padding-right: 10px; }
 @media (hover: none) { .walking .walk-hint { display: none; } }
+
+/* spontaneous thoughts: brief, unobtrusive, you can keep moving */
+.thought-line {
+  position: fixed; left: 50%; transform: translate(-50%, 8px);
+  bottom: calc(max(28vh, 215px) + var(--safe-b));
+  width: max-content; max-width: min(520px, calc(100vw - 32px));
+  padding: 10px 16px 10px; border-radius: 16px;
+  background: rgba(22, 26, 24, 0.42); backdrop-filter: blur(5px);
+  text-align: center; opacity: 0; transition: opacity 1.4s ease, transform 1.4s ease;
+  pointer-events: auto;
+}
+.thought-line[hidden] { display: none; }
+.thought-line.show { opacity: 1; transform: translate(-50%, 0); }
+html[data-motion='reduced'] .thought-line { transition: opacity 0.4s; transform: translate(-50%, 0); }
+html[data-contrast='high'] .thought-line { background: rgba(0, 0, 0, 0.9); }
+.thought-text {
+  margin: 0; font-family: var(--serif); font-style: italic; font-size: 1.12em; line-height: 1.35;
+  color: rgba(255, 250, 238, 0.96); text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+.thought-line.responded .thought-text { font-size: 1.02em; color: rgba(255, 250, 238, 0.86); }
+.thought-actions { display: flex; gap: 8px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
+.thought-btn {
+  min-height: 40px; padding: 0.25em 0.95em; font-size: 0.85em; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 250, 238, 0.35); color: var(--ink);
+}
+.thought-btn:hover { background: rgba(255, 255, 255, 0.16); }
+@media (hover: none) { .thought-btn { min-height: 44px; } }

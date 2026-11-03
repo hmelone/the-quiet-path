@@ -13,6 +13,7 @@ export const DEFAULTS = {
   musicOn: true,
   bellFrequency: 'occasional', // off | occasional | frequent
   pauseForBell: true,
+  thoughts: 'occasional', // off | rare | occasional
   fov: 62,
   autoTurn: true,
   quality: 'auto',      // auto | low | medium | high

@@ -31,6 +31,12 @@ Play for 15–30 minutes, ideally once on a phone and once on a computer. Then j
 13. Did anything feel preachy, confusing or culturally off?
 14. Did sitting work for you? What happened with the thoughts?
 
+## Passing thoughts
+- Did the thoughts feel like your own, or like the game talking at you?
+- Did any arrive at a bad moment, or too often / too rarely?
+- What did you do with the worries — let them pass, or stay with them? And with the kind ones?
+- Did lingering ever lead somewhere (the pond, the person on the bench, thanking Sister Hien)?
+
 ## Sound & music
 15. Did you hear the nature sounds change as you moved (stream, wind, frogs, rain)?
 16. Was the music calming? Too much, too little, too repetitive?
