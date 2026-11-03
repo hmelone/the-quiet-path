@@ -1,6 +1,6 @@
-// Everything the player can read, choose and discover.
-// Scripts receive `api` (see story/engine.js). Text is short, second person,
-// and never grades the player. Cultural details are checked in docs/RESEARCH.md.
+// Everything the player can read, choose and discover — in the spirit of
+// the Plum Village tradition. All phrases here are original writing; see
+// docs/RESEARCH.md for the practices they draw on and what to verify.
 
 export const THOUGHTS = [
   'Did I answer that message before I left?',
@@ -9,10 +9,10 @@ export const THOUGHTS = [
   'Am I doing this right?',
   'That conversation last week. I should have said it differently.',
   'My knee aches a little.',
-  'I wonder what’s for dinner.',
+  'I wonder what’s for lunch.',
   'How long have I been sitting?',
   'I wish I’d brought a better camera.',
-  'The light was beautiful on the steps this morning. I should have taken a picture.',
+  'The light on the pond this morning — I should have photographed it.',
 ];
 
 const FOLLOW = [
@@ -21,7 +21,7 @@ const FOLLOW = [
   'It unfolds into a list, and the list into a worry, and the worry into a memory you hadn’t meant to visit.',
 ];
 const RETURN = [
-  'Then a sound — water, wind, a bird — and you notice you’ve been away. You come back.',
+  'Then a sound — water, wind, a bird — and you notice you’ve been away. You come back, without scolding yourself.',
   'Then your breath, simply happening. You notice you’ve wandered, and that’s enough. You come back.',
   'Then the cool air on your hands. You come back to here.',
 ];
@@ -34,183 +34,195 @@ export const PROMPTS = [
   'Look for light touching something rough.',
   'Find something worn smooth by time.',
   'Notice what the rain changes.',
-  'Photograph a place where nothing seems to be happening.',
+  'Photograph someone’s work, without the person in it.',
 ];
 
-const bowNote = 'Bringing your palms together and bowing is a common gesture of respect and gratitude here.';
+const bowNote = 'Here, people often join their palms like a lotus bud and bow — to a teacher, a friend, a meal, or simply a moment.';
 
 export const SCRIPTS = {
-  // --- gate ----------------------------------------------------------------
-  async gateNotice(api) {
+  // --- gate & forest ------------------------------------------------------------
+  async gateBoard(api) {
     await api.say({
-      title: 'A notice board',
-      text: 'A sheet of paper is pinned under a little roof, the ink a little faded by weather. ' +
-        'Beside the brushed characters, someone has added a note in careful English:',
-      quote: 'Welcome. Your room is past the garden, on the left. The bells mark the day here; there is no need to hurry. ' +
-        'Please walk quietly near the hall when the board has been struck. — from the guest master',
+      title: 'The mountain gate',
+      text: 'A wooden board hangs from the beam, the brushstrokes softened by weather.',
+      quote: 'Slow down. You are here.',
+      note: 'Beneath it, a smaller card: “Welcome. Your hut is at the bottom of the valley, past the pond. When you hear a bell, you’re invited to stop and breathe. There is no need to hurry.”',
     });
     api.setFlag('readWelcome');
   },
-  async jizo(api) {
-    const c = await api.say({
-      title: 'A small stone figure',
-      text: 'A small, round-headed stone figure stands beside the steps, worn smooth by many winters. ' +
-        'It wears a red cloth bib, a little faded. Someone has left a single fresh camellia at its feet.',
-      choices: [
-        { id: 'bow', label: 'Bow, palms together' },
-        { id: 'look', label: 'Look a while longer' },
-        { id: 'go', label: 'Leave it be' },
-      ],
-    });
-    if (c === 'bow') {
-      api.setFlag('bowedJizo');
-      await api.say({ text: 'You bow. The stone is cool and quiet. A drop of water falls from the camellia’s petal.', note: bowNote });
-    } else if (c === 'look') {
-      await api.say({ text: 'Moss has crept into the folds of its robe. Its eyes are nearly closed, its face gently smiling — or perhaps that is only the wearing of the stone.' });
-    }
+  async phraseStone(api) {
+    await api.say({ text: 'A flat stone at the side of the path. Someone has brushed a line on it in dark ink, already fading:', quote: 'Here is a good place to begin.' });
   },
   async roadDown(api) {
-    await api.say({ text: 'The road winds back down the mountain toward the village and the bus stop. You’ve only just arrived. The steps are behind you.' });
+    await api.say({ text: 'The road winds back down the mountain toward the village and the bus stop. You’ve only just arrived. The path ahead goes down into the valley.' });
+  },
+  async stream(api) {
+    const c = await api.say({ text: 'A small stream runs over stones beside the path, clear and quick. It doesn’t seem to be in a hurry, exactly — just going.', choices: [{ id: 'listen', label: 'Listen for a while' }, { id: 'go', label: 'Walk on' }] });
+    if (c === 'listen') await api.say({ text: 'Up close the sound is many sounds: a low murmur, a bright tick, a small hollow knock where water drops into a pool. None of them repeats exactly.' });
+  },
+  async cedar(api) {
+    await api.say({ text: 'An old cedar, wider than your arms can reach. Moss climbs its north side. The bark comes away in long soft strips. It was here long before the gate, and will likely be here after.' });
   },
 
-  // --- garden ----------------------------------------------------------------
-  async bowl(api) {
-    for (;;) {
-      const c = await api.say({
-        title: 'Beside the water basin',
-        text: 'Someone has left a tea bowl on the moss beside the stone basin. A piece has broken from its rim — a fresh break, pale against the brown glaze. ' +
-          'The small piece lies in the moss nearby.',
-        choices: [
-          { id: 'look', label: 'Look closer' },
-          { id: 'veranda', label: 'Gather both pieces and set them on the veranda, out of harm’s way' },
-          { id: 'kitchen', label: 'Carry them to the kitchen door' },
-          { id: 'left', label: 'Leave them as they are' },
-        ],
-      });
-      if (c === 'look') { await api.closeup('bowlCloseup'); return; }
-      api.setFlag('bowl', c);
-      api.setFlag('bowlStamp', api.stamp);
-      api.setFlag('bowlDay', api.day);
-      if (c === 'veranda') {
-        await api.say({ text: 'You lift the bowl in both hands. It is lighter than it looks, and still a little cool from the night. You set it on the edge of the veranda with the piece tucked inside, where someone will see it.' });
-      } else if (c === 'kitchen') {
-        api.setFlag('noteWaiting', 'kitchen');
-        await api.say({ text: 'You follow the smell of wood smoke around the side of the hall. The kitchen door is open; steam drifts out, and someone is humming. You set the bowl on the step, the piece inside it. The humming pauses — then carries on.' });
-      } else {
-        await api.say({ text: 'You leave the bowl where it is. It sits in the moss as if it has always been there.' });
-      }
-      api.repaint();
-      return;
+  // --- bell tower ----------------------------------------------------------------
+  async towerBell(api) {
+    const c = await api.say({
+      title: 'The great bell',
+      text: 'A bronze bell hangs in the open tower, darker where hands have touched it. A wooden log on ropes hangs beside it, for sounding it.',
+      note: 'Here people speak of inviting the bell, rather than striking it.',
+      choices: [{ id: 'invite', label: 'Invite the bell' }, { id: 'look', label: 'Just look' }],
+    });
+    if (c === 'invite') {
+      await api.say({ text: 'You draw the log back, and wait for one breath. Then you let it go, softly, with a small wish:', quote: 'May whoever hears this, wherever they are, stop for a moment and breathe.' });
+      api.setFlag('invitedBell', (api.flag('invitedBell') || 0) + 1);
+      await api.bell('you');
     }
   },
-  async pressedMoss(api) {
-    await api.say({ text: 'Where the bowl had been, the moss is pressed into a small, round hollow. Already a few tips are lifting back toward the light. In a few days there will be no sign at all.' });
-    api.setFlag('sawPressed');
-  },
-  async basin(api) {
-    const c = await api.say({
-      title: 'The water basin',
-      text: 'A low stone basin, fed by a thin stream of water from a bamboo spout. A wooden ladle rests across it. ' +
-        'The basin is set low, so that anyone using it must crouch.',
-      choices: [
-        { id: 'wash', label: 'Crouch and rinse your hands' },
-        { id: 'listen', label: 'Listen to the water' },
-        { id: 'go', label: 'Stand up' },
-      ],
-    });
-    if (c === 'wash') await api.say({ text: 'You crouch, scoop water with the ladle, and pour it over one hand, then the other. The water is mountain-cold. You set the ladle back as you found it.' });
-    if (c === 'listen') await api.say({ text: 'The water falls in a thin thread, then breaks into small sounds against the surface — never quite the same twice.' });
-  },
-  async lantern(api) {
-    const c = await api.say({
-      title: 'Stone lantern',
-      text: 'A stone lantern, taller than you, its roof softened by a thick cap of moss. The little window of its firebox is dark.',
-      choices: [{ id: 'close', label: 'Look closely at the moss' }, { id: 'go', label: 'Step back' }],
-    });
-    if (c === 'close') await api.closeup('lanternCloseup');
-  },
-  async han(api) {
-    await api.say({
-      title: 'A wooden board',
-      text: 'A thick wooden board hangs from cords by the hall entrance, with a wooden mallet beside it. The centre is worn pale and hollow from years of striking. ' +
-        'Characters are brushed across it, faded. A card beneath gives one English rendering:',
-      quote: 'Birth and death are a great matter. Impermanence is swift. Wake up — do not waste this life.',
-      note: 'The board is struck to call people to sitting. Only those whose job it is strike it.',
-    });
-    api.setFlag('readHan');
-  },
-  async sitVeranda(api) { await api.sit('veranda'); },
+  async sitTower(api) { await api.sit('tower'); },
 
-  // --- pond -------------------------------------------------------------------
-  async sitPond(api) { await api.sit('pond'); },
-  async koi(api) {
-    await api.say({ text: 'Orange and white shapes move beneath the surface, unhurried. One rises, touches the underside of a reflection, and sinks again. Rings spread, and the reflected trees tremble, then settle.' });
-  },
-  async pavilion(api) {
-    const seen = api.flag('sawPavilion');
-    api.setFlag('sawPavilion');
-    await api.say({
-      text: seen
-        ? 'The little shelter waits across the water. The path around the far side of the pond is overgrown with ferns. Perhaps another day.'
-        : 'Across the water, a small roofed shelter stands among the maples. There seems to be a bench inside. The path around the pond disappears into ferns — you can’t see the way.',
-    });
-  },
-  async iris(api) {
-    await api.say({ text: 'Irises crowd the water’s edge, deep violet, each petal marked with a thin stroke of yellow. Some are just opening. A few are already curling, finished.' });
-  },
-  async frog(api) {
-    await api.say({ text: 'A small green frog sits on a lily pad, perfectly still, throat pulsing. It seems to be watching the rain — or nothing at all.' });
-    api.setFlag('sawFrog');
-  },
-
-  // --- zendo ------------------------------------------------------------------
-  async sitZendo(api) { await api.sit('zendo'); },
+  // --- meditation hall --------------------------------------------------------------
+  async sitHall(api) { await api.sit('hall'); },
+  async sitHallYard(api) { await api.sit('yard'); },
   async altar(api) {
     const c = await api.say({
       title: 'The altar',
-      text: 'At the far end of the hall, a small altar: a candle, a bowl of ash with a single stick of incense, a few flowers in a plain vase. ' +
-        'Behind them, in shadow, a seated figure. From here you can’t make out its face.',
-      choices: [{ id: 'bow', label: 'Bow, palms together' }, { id: 'go', label: 'Step back' }],
+      text: 'A low altar: a seated figure of the Buddha, small and simple; a candle; a few flowers in a white vase; a bowl of incense ash. Nothing more.',
+      choices: [{ id: 'bow', label: 'Join your palms and bow' }, { id: 'go', label: 'Step back' }],
     });
     if (c === 'bow') {
       api.setFlag('bowedAltar');
-      await api.say({ text: 'You bow. The incense thread rises straight, then bends, then breaks into curls.', note: bowNote });
+      await api.say({ text: 'You bow. The candle flame leans, then straightens.', note: bowNote });
     }
   },
-  async windows(api) {
-    await api.say({ text: api.isDark ? 'The paper windows are dark blue now, faintly lit from outside. The lamps make soft circles on the floor.' : 'Light comes through the paper, softened, so the whole hall glows evenly. Shadows of leaves move across one panel, then are still.' });
+  async bellBowl(api) {
+    await api.say({ text: 'A large bronze bell bowl rests on a red cushion near the altar, with a small wooden striker beside it. During sitting, someone wakes it with a gentle touch first, then invites it fully.', note: 'Please leave it for the bell master. The tower bell is for anyone.' });
   },
-  async card(api) {
-    await api.say({
-      title: 'A small card',
-      text: 'A handwritten card is pinned to the post:',
-      quote: 'Guests are welcome to sit. Please enter quietly, and leave your shoes outside. Photographs are welcome when no one is sitting — but please, never of the altar during a ceremony.',
-    });
-    api.setFlag('readCard');
+  async calligraphy(api) {
+    await api.say({ text: 'Three boards hang in the hall, each with a few brushed words:', quote: 'Just this breath. · Each step is enough. · Be still, and listen.' });
+  },
+  async cat(api) {
+    await api.say({ text: 'A ginger cat is asleep on the warm boards of the veranda, curled into a perfect circle. One ear turns toward you; the rest of the cat does not.' });
+    api.setFlag('metCat');
   },
 
-  // --- quarters ---------------------------------------------------------------
+  // --- pond --------------------------------------------------------------------------
+  async bridge(api) {
+    await api.say({ text: 'From the top of the little bridge you can see the whole pond: lotus leaves standing above the water, the hall above, the orchard below. The planks creak and settle under your feet.' });
+  },
+  async lotus(api) {
+    await api.say({ text: 'Lotus leaves stand on their stems above the water, each holding a bead of water that rolls when the wind moves. The flowers open from mud, pale pink, perfectly clean.' });
+  },
+  async koi(api) {
+    await api.say({ text: 'Orange and white shapes move beneath the surface, unhurried. One rises, touches the underside of a reflection, and sinks again.' });
+  },
+  async heron(api) {
+    await api.say({ text: 'A grey heron stands at the water’s edge on one leg, so still it might be a post. Then — a flash, a swallow — and it is still again.' });
+    api.setFlag('sawHeron');
+  },
+  async frog(api) {
+    await api.say({ text: 'A small green frog sits on a lotus leaf, perfectly still, throat pulsing. It seems to be watching the rain — or nothing at all.' });
+    api.setFlag('sawFrog');
+  },
+  async sitPond(api) { await api.sit('pond'); },
+
+  // --- tea house & orchard -----------------------------------------------------------
+  async bowl(api) {
+    const c = await api.say({
+      title: 'On the low wall',
+      text: 'Someone has left a tea bowl on the terrace wall. A piece has broken from its rim — a fresh break, pale against the brown glaze. The small piece lies beside it.',
+      choices: [
+        { id: 'kitchen', label: 'Carry both pieces to the kitchen door' },
+        { id: 'table', label: 'Set them on a table, where someone will see' },
+        { id: 'left', label: 'Leave them as they are' },
+      ],
+    });
+    api.setFlag('bowl', c);
+    api.setFlag('bowlStamp', api.stamp);
+    api.setFlag('bowlDay', api.day);
+    if (c === 'kitchen') {
+      api.setFlag('noteWaiting', 'kitchen');
+      await api.say({ text: 'The kitchen door is open; steam drifts out, and someone is humming. You set the bowl on the step, the piece inside it. The humming pauses — then carries on.' });
+    } else if (c === 'table') {
+      await api.say({ text: 'You lift the bowl in both hands. It is lighter than it looks. You set it on the corner of a table, the piece tucked inside, where it can’t be knocked.' });
+    } else {
+      await api.say({ text: 'You leave the bowl where it is. It sits on the stones as if it has always been there.' });
+    }
+    api.refresh();
+  },
+  async kitchen(api) {
+    const t = api.time;
+    await api.say({ text: t === 1 || t === 2 ? 'Through the open door: steam, a big pot, someone chopping in a slow, even rhythm. A sign by the door says that today’s cooks are practising silence.' : 'The kitchen is quiet now. Clean bowls are stacked to dry, rims down, in a long row.' });
+  },
+  async tea(api) {
+    const c = await api.say({ text: 'A pot of tea and a few cups sit on the table. You could pour a cup and drink it slowly.', choices: [{ id: 'drink', label: 'Pour a cup' }, { id: 'go', label: 'Not now' }] });
+    if (c === 'drink') {
+      await api.say({ text: 'The tea is pale and a little smoky. You hold the cup in both hands until it is just cool enough. You notice, sip by sip, that you are only drinking tea.' });
+      api.setFlag('hadTea');
+    }
+  },
+  async plum(api) {
+    await api.say({ text: 'Plum trees in uneven rows, their bark dark and twisted. The blossom finished weeks ago; now small hard green fruit hide among the leaves. Some trees are propped with forked sticks, the way an old person is helped across a road.' });
+  },
+  async lavender(api) {
+    await api.say({ text: 'Rows of lavender run beside the old farmhouse, humming with bees. When you brush past, the smell stays on your sleeve.' });
+  },
+  async hien(api) {
+    const n = api.flag('hienTalk') || 0;
+    if (n === 0) {
+      const c = await api.say({
+        title: 'Sister Hien',
+        text: 'A nun in a brown robe looks up and smiles, palms joining briefly. “Welcome. I’m Sister Hien. I look after the bell — and, most afternoons, the tea.”',
+        choices: [{ id: 'bell', label: '“Why does everyone stop when the bell rings?”' }, { id: 'thanks', label: 'Bow and thank her' }],
+      });
+      if (c === 'bell') {
+        await api.say({ title: 'Sister Hien', text: '“When we hear a bell, we let it call us back to ourselves. We stop — talking, walking, thinking — and enjoy three breaths. Nothing else needs doing in that moment.” She laughs. “Even the cooks stop. The soup waits.”' });
+      } else {
+        await api.say({ title: 'Sister Hien', text: '“If you hear the bell while you’re here, you’re welcome to stop with us. Three breaths. That’s all.”' });
+      }
+      api.setFlag('hienTalk', 1);
+      return;
+    }
+    const bowl = api.flag('bowl');
+    if (n === 1 && bowl) {
+      const lines = {
+        kitchen: '“Someone brought a broken bowl to the kitchen step. I think it might have been you.” She smiles. “It was our oldest bowl. We’ll mend it — slowly. Some things are worth mending slowly.”',
+        table: '“I found a broken bowl on the terrace table, with its piece inside, waiting. Whoever did that was paying attention. Thank you.”',
+        left: '“A bowl was broken yesterday on the terrace. I found it later, with the piece beside it, as if it were waiting for me.” She turns her cup slowly. “It was. Things wait for us more patiently than we wait for them.”',
+      };
+      await api.say({ title: 'Sister Hien', text: lines[bowl] });
+      api.setFlag('hienTalk', 2);
+      return;
+    }
+    if (n <= 2) {
+      await api.say({ title: 'Sister Hien', text: '“In the mornings we walk around the pond together, very slowly, without talking. If you like, you can simply join the end of the line. There’s no right way to do it — just arrive with each step.”' });
+      api.setFlag('hienTalk', 3);
+      return;
+    }
+    const idle = [
+      '“Have you had tea today?”',
+      '“The heron has been fishing at the west end all week. I think it likes the reeds.”',
+      '“When it rains, the bell sounds different — closer, somehow.”',
+      '“Take your time. The valley isn’t going anywhere.”',
+    ];
+    await api.say({ title: 'Sister Hien', text: idle[(api.day + api.time) % idle.length] });
+  },
+
+  // --- your hut -------------------------------------------------------------------------
   async futon(api) {
     if (api.time >= 3) {
       const c = await api.say({
         title: 'Your futon',
-        text: api.time === 4 ? 'The night has settled in. Your futon is folded in the corner.' : 'The evening light is fading. You could unroll your futon and rest until morning.',
+        text: api.time === 4 ? 'The night has settled in. Your futon is ready.' : 'The light is fading. You could rest until morning.',
         choices: [{ id: 'sleep', label: 'Sleep until morning' }, { id: 'stay', label: 'Not yet' }],
       });
       if (c === 'sleep') await api.sleep();
     } else {
-      const c = await api.say({
-        text: 'Your futon is folded neatly. It’s still day. You could lie down for a while.',
-        choices: [{ id: 'rest', label: 'Rest a while (let time pass)' }, { id: 'stay', label: 'Not now' }],
-      });
-      if (c === 'rest') await api.passTime('You lie back and listen to the room. When you open your eyes, the light has moved.');
+      const c = await api.say({ text: 'Your futon is folded neatly. It’s still day. You could lie down for a while.', choices: [{ id: 'rest', label: 'Rest a while (let time pass)' }, { id: 'stay', label: 'Not now' }] });
+      if (c === 'rest') await api.passTime('You lie back and listen to the hut. When you open your eyes, the light has moved.');
     }
   },
-  async bell(api) {
-    const c = await api.say({
-      text: 'A small bell sits on a cushion on your desk. Ringing it is a way of marking a moment — and of letting the next one come.',
-      choices: [{ id: 'ring', label: 'Ring the bell and let time pass' }, { id: 'stay', label: 'Leave it' }],
-    });
+  async smallBell(api) {
+    const c = await api.say({ text: 'A small bell sits on its cushion on your desk. Inviting it is a way of marking a moment — and of letting the next one come.', choices: [{ id: 'ring', label: 'Invite the small bell and let time pass' }, { id: 'stay', label: 'Leave it' }] });
     if (c === 'ring') await api.passTime(null, true);
   },
   async desk(api) {
@@ -229,17 +241,21 @@ export const SCRIPTS = {
   async note(api) {
     const which = api.flag('noteWaiting');
     const text = which === 'kitchen'
-      ? 'Thank you for bringing back the bowl. It has been in this kitchen longer than I have. I will see what can be done with it — some things are worth mending slowly.'
-      : 'Someone set the bowl somewhere safe for me. If it was you — thank you. It was my teacher’s. I had been looking for the missing piece.';
-    await api.say({ title: 'A folded note', text: 'The paper is soft and thin. The writing is quick and kind:', quote: text + ' — from the kitchen' });
+      ? 'Thank you for bringing back the bowl. It has been in this kitchen longer than any of us. We will mend it slowly.'
+      : 'Someone set the broken bowl where it could be found. If it was you — thank you. It was our teacher’s.';
+    await api.say({ title: 'A folded note', text: 'The paper is soft and thin. The writing is quick and kind:', quote: `${text} — from the kitchen` });
     api.setFlag('noteWaiting', false);
     api.setFlag('readCookNote', which);
-    api.repaint();
   },
   async darkroom(api) { await api.develop(); },
-  async alcove(api) {
-    await api.say({ text: 'In the alcove hangs an ink painting: a few grey washes for mountains, a lot of empty paper for mist. Beneath it, a single flower in a slim vase. Someone changes the flower; you wonder when.' });
-  },
+};
+
+/** Sitting openings by place. */
+export const SIT_OPENINGS = {
+  hall: 'You bow to the cushion, sit, and settle. The hall is very quiet.',
+  yard: 'You sit on the bench. The hall roof, the trees, the sky. Nothing needs doing.',
+  pond: 'You sit by the water. The lotus leaves sway a little, then are still.',
+  tower: 'You sit on the bench by the tower. The whole valley is below you.',
 };
 
 /** Returning-thought moments while sitting. */
@@ -247,51 +263,42 @@ export function thoughtFollow(rng) {
   return { follow: FOLLOW[Math.floor(rng() * FOLLOW.length)], back: RETURN[Math.floor(rng() * RETURN.length)] };
 }
 
-/** Things that happen when you arrive somewhere. */
-export async function onEnter(placeId, api) {
+/** Things that happen when you enter a zone. */
+export async function onEnterZone(zone, api) {
   const t = api.time;
-  if (placeId === 'gate' && !api.flag('arrived')) {
+  if (zone === 'gate' && !api.flag('arrived')) {
     api.setFlag('arrived');
-    api.whisper('The bus left you where the road ends. Stone steps climb into the mist.', 7000);
-    setTimeout(() => api.whisper('Look around by dragging. Tap anything that catches your eye.', 6000), 7600);
+    api.whisper('The bus left you where the road ends. A wooden gate stands among the cedars, and a path leads down into the valley.', 8000);
+    setTimeout(() => api.whisper('Tap the ground to walk there. Drag to look around. Tap anything with a symbol to approach it.', 7000), 8800);
     return;
   }
-  if (placeId === 'garden') {
-    if (!api.flag('heardSweep') && t <= 1) {
-      api.setFlag('heardSweep');
-      api.audio.sweep();
-      api.whisper('Somewhere beyond the wall, someone is sweeping.');
-    }
-    // bowl on the veranda: someone comes for it
-    if (api.flag('bowl') === 'veranda' && !api.flag('bowlCollected') && api.stamp > (api.flag('bowlStamp') ?? 0)) {
+  if (zone === 'forest' && !api.flag('heardSweep') && t <= 1 && api.weather !== 'rain') {
+    api.setFlag('heardSweep');
+    api.audio.sweep('[a broom sweeping the path ahead]');
+  }
+  if (zone === 'tea') {
+    if (api.flag('bowl') === 'table' && !api.flag('bowlCollected') && api.stamp > (api.flag('bowlStamp') ?? 0)) {
       api.setFlag('bowlCollected');
-      api.setFlag('noteWaiting', 'veranda');
-      setTimeout(() => {
-        api.audio.otherFootsteps();
-        api.whisper('Footsteps pause on the veranda, where you left the bowl. A long, quiet moment. Then they go on, toward the kitchen.', 8000);
-        setTimeout(() => api.repaint(), 5000);
-      }, 2500);
+      api.setFlag('noteWaiting', 'table');
+      api.whisper('The bowl is gone from the table. Someone has wiped the place where it stood.');
+      api.refresh();
     }
     if (api.flag('bowl') === 'left' && !api.flag('bowlTaken') && api.day > (api.flag('bowlDay') ?? 99)) {
       api.setFlag('bowlTaken');
-      api.repaint();
-    }
-    if ((t === 0 || t === 3) && api.flag('hanHeard') !== `${api.day}-${t}`) {
-      api.setFlag('hanHeard', `${api.day}-${t}`);
-      setTimeout(() => api.audio.han(), 1500);
-      setTimeout(() => api.whisper('From the hall: a wooden board, struck slowly, then faster. People are gathering to sit.'), 2000);
+      api.whisper('The low wall is bare now. Only a small pale chip remains between two stones.');
+      api.refresh();
     }
   }
-  if (placeId === 'zendo' && (t === 0 || t === 3)) {
-    api.whisper('A few people sit facing the wall in silence. No one looks up. A cushion near the door is free.', 7000);
+  if (zone === 'hall' && (t === 0 || t === 3)) {
+    api.whisper('People are sitting in silence. A cushion near the door is free.', 6000);
   }
-  if (placeId === 'quarters' && api.flag('noteWaiting') && !api.flag('noteSeen')) {
-    api.setFlag('noteSeen');
+  if (zone === 'hut' && api.flag('noteWaiting') && !api.flag(`noteSeen-${api.flag('noteWaiting')}`)) {
+    api.setFlag(`noteSeen-${api.flag('noteWaiting')}`);
     api.whisper('There’s a folded note on your desk.');
   }
-  if (placeId === 'pond' && api.weather === 'rain' && !api.flag('pondRain')) {
-    api.setFlag('pondRain');
-    api.whisper('Rain stipples the whole pond. The reflections have broken into a thousand pieces.');
+  if (zone === 'pond' && api.weather === 'rain' && !api.flag(`pondRain-${api.day}`)) {
+    api.setFlag(`pondRain-${api.day}`);
+    api.whisper('Rain stipples the whole pond. The lotus leaves bow and spill, bow and spill.');
   }
 }
 

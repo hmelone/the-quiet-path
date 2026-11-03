@@ -82,14 +82,15 @@ export class Input {
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
     const k = e.key.toLowerCase();
-    if (['arrowleft', 'arrowright', 'a', 'd', 'arrowup', 'arrowdown'].includes(k) && !(t && t.tagName === 'BUTTON' && (k === 'arrowup' || k === 'arrowdown'))) {
+    if (['arrowleft', 'arrowright', 'a', 'd', 'w', 's', 'arrowup', 'arrowdown'].includes(k)) {
       this.keys.add(k);
+      if (k.startsWith('arrow')) e.preventDefault();
     }
     this.h.key?.(k, e);
     this.h.activity?.();
   }
 
-  /** Called every frame: momentum and held keys. Returns [dx, dy]. */
+  /** Called every frame: momentum and held keys. Returns { dx, dy, f, s }. */
   step(dt) {
     let dx = 0, dy = 0;
     if (!this.pointers.size) {
@@ -101,11 +102,16 @@ export class Input {
       if (Math.abs(this.vel) < 1e-5) this.vel = 0;
       if (Math.abs(this.velY) < 1e-5) this.velY = 0;
     }
-    const kspeed = 0.55 * dt * settings.get('lookSensitivity');
-    if (this.keys.has('arrowleft') || this.keys.has('a')) dx += kspeed;
-    if (this.keys.has('arrowright') || this.keys.has('d')) dx -= kspeed;
-    if (this.keys.has('arrowup')) dy += kspeed;
-    if (this.keys.has('arrowdown')) dy -= kspeed;
-    return [dx, dy];
+    const kspeed = 0.35 * dt * settings.get('lookSensitivity');
+    if (this.keys.has('arrowleft')) dx += kspeed;
+    if (this.keys.has('arrowright')) dx -= kspeed;
+    let f = 0, s = 0;
+    if (this.keys.has('w') || this.keys.has('arrowup')) f += 1;
+    if (this.keys.has('s') || this.keys.has('arrowdown')) f -= 1;
+    if (this.keys.has('a')) s -= 1;
+    if (this.keys.has('d')) s += 1;
+    return { dx, dy, f, s };
   }
+
+  get dragging() { return this.pointers.size > 0 && [...this.pointers.values()].some((p) => Math.hypot(p.x - p.sx, p.y - p.sy) > 9); }
 }

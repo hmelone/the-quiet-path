@@ -38,7 +38,7 @@ class AudioEngine {
     this.master = ctx.createGain();
     this.master.connect(ctx.destination);
     this.bus = {};
-    for (const k of ['ambience', 'effects', 'bell']) {
+    for (const k of ['ambience', 'effects', 'bell', 'music']) {
       this.bus[k] = ctx.createGain();
       this.bus[k].connect(this.master);
     }
@@ -69,6 +69,13 @@ class AudioEngine {
     this.bus.ambience.gain.setTargetAtTime(v.ambience, t, 0.2);
     this.bus.effects.gain.setTargetAtTime(v.effects, t, 0.2);
     this.bus.bell.gain.setTargetAtTime(v.bell, t, 0.2);
+    this.bus.music.gain.setTargetAtTime(v.musicOn ? v.music * (this.duck ?? 1) : 0, t, 0.8);
+  }
+
+  /** Lower the music (bells, sitting). k: 0..1 */
+  setDuck(k) {
+    this.duck = k;
+    this.applySettings();
   }
 
   _loop(buf, rate = 1) {
@@ -98,7 +105,8 @@ class AudioEngine {
     const hp = (f) => { const b = c.createBiquadFilter(); b.type = 'highpass'; b.frequency.value = f; return b; };
     this._bed('wind', this._loop(this.noise.brown), [lp(500)]);
     this._bed('leaves', this._loop(this.noise.pink), [bp(3200, 0.6)]);
-    this._bed('stream', this._loop(this.noise.white, 0.9), [bp(800, 0.8), lp(2500)]);
+    this.streamPan = c.createStereoPanner ? c.createStereoPanner() : c.createGain();
+    this._bed('stream', this._loop(this.noise.white, 0.9), [bp(800, 0.8), lp(2500), this.streamPan]);
     this._bed('trickle', this._loop(this.noise.white), [bp(2400, 3.5)]);
     this.rainLp = lp(7000);
     this._bed('rain', this._loop(this.noise.white, 0.8), [hp(700), this.rainLp]);
@@ -332,6 +340,29 @@ class AudioEngine {
         this._burst(t + 0.03, 0.06, 0.02, 'bandpass', 3800, 1, 'effects');
       }
     }
+  }
+
+  /** One footstep on a surface: gravel, stone, wood, grass. */
+  step(surface = 'grass') {
+    if (!this.ctx || settings.get('muted')) return;
+    const t = this.ctx.currentTime;
+    const pan = rand(-0.08, 0.08);
+    if (surface === 'wood') {
+      this._burst(t, 0.08, 0.04, 'lowpass', 520, 1, 'effects', pan, 0.1);
+      this._tone(t, 160, 120, 0.07, 0.02, { bus: 'effects', verb: 0.1 });
+    } else if (surface === 'gravel') {
+      this._burst(t, 0.09, 0.03, 'bandpass', 2600, 0.7, 'effects', pan);
+      this._burst(t + 0.03, 0.07, 0.02, 'bandpass', 4200, 1, 'effects', pan);
+    } else if (surface === 'stone') {
+      this._burst(t, 0.05, 0.03, 'bandpass', 1500, 1.2, 'effects', pan, 0.05);
+    } else {
+      this._burst(t, 0.12, 0.018, 'bandpass', 1200, 0.6, 'effects', pan);
+    }
+  }
+
+  /** Spatial hints for the stream (stereo position, -1..1). */
+  setStreamPan(p) {
+    if (this.streamPan?.pan) this.streamPan.pan.setTargetAtTime(Math.max(-1, Math.min(1, p)), this.ctx.currentTime, 0.3);
   }
 
   /** Someone else's footsteps, on the veranda. */

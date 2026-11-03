@@ -1,0 +1,572 @@
+// Architecture: the mountain gate, bell tower, meditation hall (walk-in),
+// stone farmhouse tea house, your hut, the pond bridge, benches and lamps.
+// Each building is merged into a few meshes; walls become nav colliders.
+import * as THREE from 'three';
+import { colorize, merge, vary } from './geo.js';
+import { paint } from './materials.js';
+import { PADS, BUILDINGS, BRIDGE, WATER_Y } from './layout.js';
+import { heightAt, bridgeHeight } from './terrain.js';
+import { Rng, fbm2 } from '../core/rng.js';
+
+const C = (h) => new THREE.Color(h);
+const WOOD = '#6e4f38', WOOD_D = '#4a3426', WOOD_L = '#9a7656', PLASTER = '#e2d7c0', TILE = '#4b4f55';
+const STONE = '#a49a86', TERRACOTTA = '#b8643f', SHUTTER = '#7f97a6', BRONZE = '#7a5a2a';
+
+/** Collects coloured boxes etc. in a local frame, then emits one merged mesh. */
+class Kit {
+  constructor() { this.parts = []; this.colliders = []; }
+  box(w, h, d, x, y, z, col, { rotY = 0, rough = 0.05, collide = false, noise = 0 } = {}) {
+    const g = new THREE.BoxGeometry(w, h, d);
+    if (rotY) g.rotateY(rotY);
+    g.translate(x, y + h / 2, z);
+    this.parts.push(colorize(g, (px, py, pz) => {
+      const c = vary(C(col), rough, px * 1.7, py * 1.7, pz * 1.7);
+      if (noise) c.multiplyScalar(1 + (fbm2(px * 1.3 + py, pz * 1.3 - py, 3) - 0.5) * noise);
+      return c;
+    }));
+    if (collide) this.colliders.push({ x, z, w, d, rot: rotY });
+    return this;
+  }
+  cyl(r0, r1, h, x, y, z, col, seg = 8) {
+    const g = new THREE.CylinderGeometry(r1, r0, h, seg);
+    g.translate(x, y + h / 2, z);
+    this.parts.push(colorize(g, (px, py, pz) => vary(C(col), 0.05, px * 3, py * 3, pz * 3)));
+    return this;
+  }
+  geo(g, col) { this.parts.push(colorize(g, typeof col === 'function' ? col : (x, y, z) => vary(C(col), 0.05, x, y, z))); return this; }
+  mesh(mat) {
+    const m = new THREE.Mesh(merge(this.parts), mat || paint({ side: THREE.DoubleSide }));
+    m.castShadow = true;
+    m.receiveShadow = true;
+    return m;
+  }
+}
+
+/** Hip roof with gently upturned corners (Vietnamese temple feel). */
+function hipRoof(W, D, H, lift, col, seg = 10) {
+  const pos = [];
+  const rw = Math.max(0.2, (W - D) / 2);
+  const eaveY = (t) => lift * Math.pow(Math.abs(t * 2 - 1), 3);
+  const tri = (a, b, c) => pos.push(...a, ...b, ...c);
+  for (const sgn of [1, -1]) {
+    // long faces
+    for (let i = 0; i < seg; i++) {
+      const t0 = i / seg, t1 = (i + 1) / seg;
+      const e0 = [-W / 2 + W * t0, eaveY(t0), (sgn * D) / 2], e1 = [-W / 2 + W * t1, eaveY(t1), (sgn * D) / 2];
+      const r0 = [-rw + 2 * rw * t0, H, 0], r1 = [-rw + 2 * rw * t1, H, 0];
+      if (sgn > 0) { tri(e0, e1, r1); tri(e0, r1, r0); } else { tri(e1, e0, r0); tri(e1, r0, r1); }
+    }
+    // short faces
+    for (let i = 0; i < seg; i++) {
+      const t0 = i / seg, t1 = (i + 1) / seg;
+      const e0 = [(sgn * W) / 2, eaveY(t0), -D / 2 + D * t0], e1 = [(sgn * W) / 2, eaveY(t1), -D / 2 + D * t1];
+      const r = [sgn * rw, H, 0];
+      if (sgn > 0) tri(e1, e0, r); else tri(e0, e1, r);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  return colorize(g, (x, y, z) => {
+    const c = vary(C(col), 0.06, x * 2, y, z * 2);
+    // tile rows
+    const rows = Math.sin((Math.abs(z) + Math.abs(x) * 0.15) * 14) * 0.04;
+    return c.multiplyScalar(0.92 + rows + y * 0.03);
+  });
+}
+
+/** Simple gable roof (farmhouse / hut). Ridge along x. */
+function gableRoof(W, D, H, col, overhang = 0.4) {
+  const w = W / 2 + overhang, d = D / 2 + overhang;
+  const pos = [
+    -w, 0, d, w, 0, d, w, H, 0, -w, 0, d, w, H, 0, -w, H, 0,
+    w, 0, -d, -w, 0, -d, -w, H, 0, w, 0, -d, -w, H, 0, w, H, 0,
+  ];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  return colorize(g, (x, y, z) => vary(C(col), 0.08, x * 3, y * 3, z * 3).multiplyScalar(0.9 + Math.sin(x * 9) * 0.05));
+}
+
+/** Gable end triangles (walls under a gable roof). */
+function gableEnds(W, D, H, y0, col) {
+  const pos = [];
+  for (const s of [-1, 1]) pos.push(s * W / 2, y0, -D / 2, s * W / 2, y0, D / 2, s * W / 2, y0 + H, 0);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  return colorize(g, col);
+}
+
+/** Brush-written phrase on a paper or wood board, painted on a canvas. */
+export function calligraphy(text, { w = 512, h = 160, paper = '#efe6d2', ink = '#2a2420', vertical = false } = {}) {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const g = c.getContext('2d');
+  g.fillStyle = paper;
+  g.fillRect(0, 0, w, h);
+  const rng = new Rng(text);
+  for (let i = 0; i < 300; i++) {
+    g.fillStyle = `rgba(120,100,70,${rng.range(0.02, 0.06)})`;
+    g.fillRect(rng.f() * w, rng.f() * h, rng.range(2, 30), rng.range(1, 3));
+  }
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  const size = vertical ? w * 0.42 : Math.min(h * 0.5, (w * 1.6) / Math.max(8, text.length));
+  g.font = `italic 600 ${size}px 'Cormorant Garamond', Georgia, serif`;
+  // several offset passes give a soft, inky brush edge
+  for (let k = 0; k < 6; k++) {
+    g.fillStyle = `rgba(42,36,32,${k === 5 ? 0.95 : 0.12})`;
+    g.fillText(text, w / 2 + rng.g() * 2, h / 2 + rng.g() * 2);
+  }
+  g.fillStyle = ink;
+  g.fillText(text, w / 2, h / 2);
+  // a small red seal
+  g.fillStyle = 'rgba(170,40,36,0.85)';
+  g.fillRect(w - h * 0.32, h - h * 0.34, h * 0.16, h * 0.16);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+function board(text, bw, bh, opts) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(bw, bh), new THREE.MeshToonMaterial({ map: calligraphy(text, opts), side: THREE.DoubleSide }));
+  m.castShadow = false;
+  return m;
+}
+
+// Shared glowing materials (windows, lamps), dimmed by daylight
+export const glow = {
+  window: new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffd79a'), side: THREE.DoubleSide, toneMapped: false }),
+  lamp: new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffcf88'), toneMapped: false }),
+  candle: new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffe2a8'), toneMapped: false }),
+};
+
+function place(obj, x, z, rot, y) {
+  obj.position.set(x, y, z);
+  obj.rotation.y = rot;
+  return obj;
+}
+
+function worldColliders(list, x, z, rot) {
+  const c = Math.cos(rot), s = Math.sin(rot);
+  return list.map((b) => ({ x: x + b.x * c + b.z * s, z: z - b.x * s + b.z * c, w: b.w, d: b.d, rot: (b.rot || 0) + rot }));
+}
+
+// --- the gate --------------------------------------------------------------------
+
+function buildGate() {
+  const k = new Kit();
+  const p = PADS.gate;
+  for (const s of [-1, 1]) {
+    k.box(0.9, 3.6, 0.9, s * 2.2, 0, 0, PLASTER, { collide: true, noise: 0.15 });
+    k.box(1.05, 0.25, 1.05, s * 2.2, 3.6, 0, WOOD_D);
+    k.box(0.5, 1.4, 4.0, s * 4.2, 0, 0.0, STONE, { collide: true, noise: 0.3, rotY: Math.PI / 2 });
+  }
+  k.box(5.6, 0.35, 0.45, 0, 3.0, 0, WOOD);
+  k.geo((() => { const g = hipRoof(6.4, 2.4, 1.3, 0.45, TILE); g.translate(0, 3.85, 0); return g; })(), (x, y, z) => vary(C(TILE), 0.06, x, y, z));
+  const g = new THREE.Group();
+  g.add(k.mesh());
+  const b = board('Slow down. You are here.', 2.6, 0.55, { w: 640, h: 136 });
+  b.position.set(0, 3.0 + 0.17, 0.24);
+  g.add(b);
+  const b2 = b.clone();
+  b2.position.z = -0.24;
+  b2.rotation.y = Math.PI;
+  g.add(b2);
+  place(g, p.x, p.z, 0, p.h);
+  return { group: g, colliders: worldColliders(k.colliders, p.x, p.z, 0) };
+}
+
+// --- bell tower ------------------------------------------------------------------
+
+function bellGeo() {
+  const pts = [];
+  const prof = [[0.05, 1.25], [0.32, 1.2], [0.48, 1.05], [0.55, 0.7], [0.6, 0.35], [0.72, 0.08], [0.76, 0]];
+  for (const [r, y] of prof) pts.push(new THREE.Vector2(r, y));
+  const g = new THREE.LatheGeometry(pts, 20);
+  g.translate(0, -1.25, 0);
+  return g;
+}
+
+function buildTower() {
+  const k = new Kit();
+  const p = PADS.tower;
+  k.box(4.6, 0.45, 4.6, 0, -0.1, 0, STONE, { noise: 0.3 });
+  for (const sx of [-1.8, 1.8]) for (const sz of [-1.8, 1.8]) k.box(0.28, 4.2, 0.28, sx, 0.35, sz, WOOD, { collide: true });
+  k.box(4.0, 0.22, 0.25, 0, 3.9, -1.8, WOOD_D).box(4.0, 0.22, 0.25, 0, 3.9, 1.8, WOOD_D);
+  k.box(0.25, 0.22, 4.0, -1.8, 3.9, 0, WOOD_D).box(0.25, 0.22, 4.0, 1.8, 3.9, 0, WOOD_D);
+  k.box(4.0, 0.2, 0.3, 0, 4.1, 0, WOOD_D);
+  k.geo((() => { const g = hipRoof(5.6, 5.6, 1.9, 0.55, TILE); g.translate(0, 4.4, 0); return g; })(), (x, y, z) => vary(C(TILE), 0.06, x, y, z));
+  const g = new THREE.Group();
+  g.add(k.mesh());
+  const bell = new THREE.Mesh(colorize(bellGeo(), (x, y, z) => vary(C(BRONZE), 0.08, x * 4, y * 4, z * 4).multiplyScalar(0.8 + (y + 1.2) * 0.2)), paint({ side: THREE.DoubleSide }));
+  bell.position.set(0, 4.05, 0);
+  bell.castShadow = true;
+  g.add(bell);
+  // the wooden striker log, hung on ropes
+  const log = new THREE.Mesh(colorize(new THREE.CylinderGeometry(0.12, 0.12, 1.6, 8).rotateZ(Math.PI / 2), WOOD_L), paint({}));
+  log.position.set(-1.25, 3.25, 0);
+  g.add(log);
+  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.8, 4), paint({ color: 0xbfae86, vertexColors: false }));
+  rope.position.set(-1.6, 3.65, 0);
+  g.add(rope, rope.clone().translateX(0.7));
+  place(g, p.x, p.z, 0.3, p.h);
+  g.userData.bell = bell;
+  return { group: g, colliders: worldColliders(k.colliders, p.x, p.z, 0.3), bell, log };
+}
+
+// --- meditation hall (walk-in) -------------------------------------------------------
+
+function cushionGeo() {
+  const parts = [];
+  const mat = new THREE.BoxGeometry(0.75, 0.06, 0.75);
+  mat.translate(0, 0.03, 0);
+  parts.push(colorize(mat, '#5b4a3a'));
+  const z = new THREE.CylinderGeometry(0.2, 0.22, 0.16, 12);
+  z.translate(0, 0.14, -0.1);
+  parts.push(colorize(z, '#7a5a3e'));
+  return merge(parts);
+}
+
+function seatedFigure(col = '#b59a5c', s = 1) {
+  const parts = [];
+  const base = new THREE.SphereGeometry(0.38 * s, 12, 8);
+  base.scale(1.1, 0.45, 0.8);
+  base.translate(0, 0.17 * s, 0);
+  parts.push(colorize(base, col));
+  const body = new THREE.SphereGeometry(0.24 * s, 12, 8);
+  body.scale(1, 1.35, 0.85);
+  body.translate(0, 0.52 * s, 0);
+  parts.push(colorize(body, col));
+  const head = new THREE.SphereGeometry(0.13 * s, 12, 8);
+  head.translate(0, 0.95 * s, 0);
+  parts.push(colorize(head, col));
+  return merge(parts);
+}
+
+function buildHall() {
+  const B = BUILDINGS.hall;
+  const p = PADS.hall;
+  const k = new Kit();
+  const W = B.w, D = B.d, F = B.floor, H = 3.4;
+  // platform and steps
+  k.box(W + 1.6, F, D + 1.6, 0, -0.2, 0, STONE, { noise: 0.25 });
+  for (let i = 0; i < 2; i++) k.box(B.door.w + 1, F * (0.5 - i * 0.25) + 0.05, 0.5, 0, -0.2, D / 2 + 1.05 + i * 0.5, STONE);
+  // floor
+  k.box(W, 0.06, D, 0, F - 0.06, 0, WOOD_L);
+  // walls: back, sides, front with a wide door opening; windows as glow strips
+  const y0 = F;
+  k.box(W, H, 0.22, 0, y0, -D / 2, PLASTER, { collide: true, noise: 0.1 });
+  k.box(0.22, H, D, -W / 2, y0, 0, PLASTER, { collide: true, noise: 0.1 });
+  k.box(0.22, H, D, W / 2, y0, 0, PLASTER, { collide: true, noise: 0.1 });
+  const side = (W - B.door.w) / 2;
+  k.box(side, H, 0.22, -(B.door.w / 2 + side / 2), y0, D / 2, PLASTER, { collide: true, noise: 0.1 });
+  k.box(side, H, 0.22, B.door.w / 2 + side / 2, y0, D / 2, PLASTER, { collide: true, noise: 0.1 });
+  k.box(B.door.w, 0.9, 0.24, 0, y0 + H - 0.9, D / 2, PLASTER);
+  // posts and beams
+  for (const sx of [-W / 2, -W / 4, 0, W / 4, W / 2]) for (const sz of [-D / 2, D / 2]) if (!(sx === 0 && sz < 0)) k.box(0.3, H, 0.3, sx, y0, sz, WOOD);
+  k.box(W + 0.3, 0.3, 0.3, 0, y0 + H, D / 2, WOOD_D).box(W + 0.3, 0.3, 0.3, 0, y0 + H, -D / 2, WOOD_D);
+  // open veranda posts in front
+  for (const sx of [-W / 2, -W / 6, W / 6, W / 2]) k.box(0.25, H, 0.25, sx, y0, D / 2 + 1.4, WOOD);
+  k.box(W + 0.4, 0.06, 1.5, 0, F - 0.06, D / 2 + 0.75, WOOD);
+  // roof
+  k.geo((() => { const g = hipRoof(W + 3.8, D + 3.6, 2.8, 0.6, TILE, 14); g.translate(0, y0 + H + 0.15, 0.3); return g; })(), (x, y, z) => vary(C(TILE), 0.06, x, y, z));
+  // ceiling (so the interior is enclosed)
+  k.box(W, 0.08, D, 0, y0 + H, 0, '#8a6a4c');
+  // altar
+  k.box(3.2, 0.5, 0.9, 0, F, -D / 2 + 0.8, WOOD_D);
+  k.box(3.6, 0.08, 1.1, 0, F + 0.5, -D / 2 + 0.8, WOOD);
+  const g = new THREE.Group();
+  g.add(k.mesh());
+
+  // windows (glow strips on the side walls)
+  const winGeo = [];
+  for (const sx of [-1, 1]) for (const z of [-2.4, 0, 2.4]) {
+    const w = new THREE.PlaneGeometry(1.6, 1.1);
+    w.rotateY(sx * Math.PI / 2);
+    w.translate(sx * (W / 2 + 0.12), F + 1.7, z);
+    winGeo.push(w);
+    const wi = w.clone();
+    wi.translate(-sx * 0.25, 0, 0);
+    wi.rotateY(0);
+    winGeo.push(wi);
+  }
+  for (const x of [-4.5, -1.5, 1.5, 4.5]) {
+    const w = new THREE.PlaneGeometry(1.4, 1.0);
+    w.translate(x, F + 1.8, -D / 2 - 0.12);
+    winGeo.push(w);
+    const wi = w.clone();
+    wi.rotateY(Math.PI);
+    wi.translate(0, 0, 0);
+    winGeo.push(wi.translate(0, 0, 0.25 - (-D / 2 - 0.12) * 0 ));
+  }
+  const winMesh = new THREE.Mesh(merge(winGeo.map((x) => colorize(x, '#ffffff'))), glow.window);
+  g.add(winMesh);
+
+  // cushions in two rows facing the centre aisle
+  const cushions = new THREE.InstancedMesh(cushionGeo(), paint({}), 20);
+  const o = new THREE.Object3D();
+  let n = 0;
+  for (const sx of [-1, 1]) for (let i = 0; i < 5; i++) for (const row of [0, 1]) {
+    o.position.set(sx * (2.6 + row * 1.2), F, -2.4 + i * 1.3);
+    o.rotation.y = sx > 0 ? Math.PI / 2 : -Math.PI / 2;
+    o.updateMatrix();
+    cushions.setMatrixAt(n++, o.matrix);
+  }
+  cushions.receiveShadow = true;
+  g.add(cushions);
+  g.userData.cushionSpots = [];
+  for (const sx of [-1, 1]) for (let i = 0; i < 5; i++) for (const row of [0, 1]) g.userData.cushionSpots.push([sx * (2.6 + row * 1.2), -2.4 + i * 1.3, sx > 0 ? Math.PI / 2 : -Math.PI / 2]);
+
+  // altar: a small seated figure, flowers, a candle, and the great bell bowl on its cushion
+  const fig = new THREE.Mesh(seatedFigure('#c2a86a', 1), paint({}));
+  fig.position.set(0, F + 0.58, -D / 2 + 0.7);
+  g.add(fig);
+  const vase = new THREE.Mesh(colorize(new THREE.CylinderGeometry(0.07, 0.09, 0.3, 10).translate(0, 0.15, 0), '#e8e4da'), paint({}));
+  vase.position.set(0.9, F + 0.58, -D / 2 + 0.85);
+  g.add(vase);
+  const flowers = new THREE.Mesh(merge([0, 1, 2, 3, 4].map((i) => colorize(new THREE.IcosahedronGeometry(0.06, 0).translate(Math.cos(i * 1.3) * 0.1, 0.38 + (i % 2) * 0.06, Math.sin(i * 1.3) * 0.08), i % 2 ? '#f0f0e8' : '#e8b84a'))), paint({}));
+  flowers.position.copy(vase.position);
+  g.add(flowers);
+  const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.16, 8).translate(0, 0.08, 0), paint({ color: 0xf2ead6, vertexColors: false }));
+  candle.position.set(-0.8, F + 0.58, -D / 2 + 0.85);
+  const flame = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 4).scale(1, 1.8, 1), glow.candle);
+  flame.position.set(-0.8, F + 0.58 + 0.2, -D / 2 + 0.85);
+  g.add(candle, flame);
+  const bowlBell = new THREE.Mesh(colorize(new THREE.SphereGeometry(0.3, 16, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2).rotateX(Math.PI).translate(0, 0.3, 0), BRONZE), paint({ side: THREE.DoubleSide }));
+  bowlBell.position.set(-2.2, F, -D / 2 + 1.2);
+  g.add(bowlBell);
+  const bellCushion = new THREE.Mesh(colorize(new THREE.CylinderGeometry(0.38, 0.4, 0.12, 12).translate(0, 0.06, 0), '#8b2f2a'), paint({}));
+  bellCushion.position.copy(bowlBell.position);
+  bowlBell.position.y += 0.1;
+  g.add(bellCushion);
+
+  // calligraphy boards on the inner walls
+  const phrases = ['Just this breath', 'Each step is enough', 'Be still, and listen'];
+  phrases.forEach((t, i) => {
+    const bd = board(t, 2.2, 0.55, { w: 600, h: 150 });
+    if (i === 0) { bd.position.set(0, F + 2.75, -D / 2 + 0.13); }
+    else { const sx = i === 1 ? -1 : 1; bd.position.set(sx * (W / 2 - 0.13), F + 2.75, 0); bd.rotation.y = -sx * Math.PI / 2; }
+    g.add(bd);
+  });
+
+  // warm light inside
+  const light = new THREE.PointLight(0xffc98a, 0, 16, 1.6);
+  light.position.set(0, F + 2.6, 0);
+  g.add(light);
+  const lamps = [];
+  for (const x of [-3.5, 0, 3.5]) {
+    const l = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8).scale(1, 1.3, 1), glow.lamp);
+    l.position.set(x, F + 2.8, 0.5);
+    g.add(l);
+    lamps.push(l);
+  }
+  place(g, B.x, B.z, B.rot, p.h);
+  return {
+    group: g, colliders: worldColliders(k.colliders, B.x, B.z, B.rot), light,
+    cushionSpots: g.userData.cushionSpots.map(([x, z, r]) => ({ x: B.x + x, z: B.z + z, rot: r, y: p.h + F })),
+    altar: { x: B.x, z: B.z - D / 2 + 0.8 }, bowlBell: { x: B.x - 2.2, z: B.z - D / 2 + 1.2 },
+  };
+}
+
+// --- the tea house (old stone farmhouse) -------------------------------------------
+
+function buildTea() {
+  const B = BUILDINGS.tea;
+  const p = PADS.tea;
+  const k = new Kit();
+  const W = B.w, D = B.d, H = 3.0;
+  k.box(W, H, D, 0, 0, 0, STONE, { collide: true, noise: 0.45, rough: 0.09 });
+  k.geo(gableEnds(W, D, 1.8, H, (x, y, z) => vary(C(STONE), 0.09, x * 2, y * 2, z * 2)));
+  k.geo((() => { const g = gableRoof(W, D, 1.8, TERRACOTTA, 0.5); g.translate(0, H, 0); return g; })(), (x, y, z) => vary(C(TERRACOTTA), 0.07, x * 3, y, z * 3).multiplyScalar(0.92 + Math.sin(x * 10) * 0.05));
+  k.box(0.6, 1.4, 0.6, W / 2 - 1.2, H + 0.8, -0.8, STONE, { noise: 0.4 }); // chimney
+  // door and shutters on the front (+z) side and east end
+  k.box(1.1, 2.1, 0.08, 1.6, 0, D / 2 + 0.02, WOOD_D);
+  for (const x of [-2.6, -0.6]) {
+    k.box(0.45, 1.1, 0.06, x - 0.5, 1.1, D / 2 + 0.04, SHUTTER).box(0.45, 1.1, 0.06, x + 0.5, 1.1, D / 2 + 0.04, SHUTTER);
+  }
+  // terrace: paving, two tables with benches, a low stone wall
+  k.box(W + 2, 0.12, 4, 0, -0.05, D / 2 + 2.2, '#b7ab93', { noise: 0.3 });
+  for (const x of [-2.2, 2.0]) {
+    k.box(1.2, 0.06, 0.8, x, 0.72, D / 2 + 2.3, WOOD_L, { collide: true });
+    k.box(0.1, 0.72, 0.1, x - 0.5, 0, D / 2 + 2.0, WOOD_D).box(0.1, 0.72, 0.1, x + 0.5, 0, D / 2 + 2.6, WOOD_D);
+    k.box(1.2, 0.06, 0.3, x, 0.42, D / 2 + 1.6, WOOD_L).box(1.2, 0.06, 0.3, x, 0.42, D / 2 + 3.0, WOOD_L);
+  }
+  k.box(0.5, 0.6, 4.2, -W / 2 - 1.1, 0, D / 2 + 2.2, STONE, { collide: true, noise: 0.4 });
+  const g = new THREE.Group();
+  g.add(k.mesh());
+  const win = [];
+  for (const x of [-2.6, -0.6]) win.push(colorize(new THREE.PlaneGeometry(0.85, 1.0).translate(x, 1.65, D / 2 + 0.03), '#fff'));
+  g.add(new THREE.Mesh(merge(win), glow.window));
+  const sign = board('A cup of tea, a quiet friend', 2.4, 0.42, { w: 700, h: 122, paper: '#d9c9a6' });
+  sign.position.set(-1.6, 2.55, D / 2 + 0.06);
+  g.add(sign);
+  // a teapot and cups on the first table
+  const tp = new THREE.Mesh(merge([
+    colorize(new THREE.SphereGeometry(0.12, 10, 8).scale(1, 0.8, 1).translate(0, 0.1, 0), '#6d4a3a'),
+    colorize(new THREE.CylinderGeometry(0.015, 0.02, 0.12, 5).rotateZ(1).translate(0.13, 0.12, 0), '#6d4a3a'),
+    ...[0, 1, 2].map((i) => colorize(new THREE.CylinderGeometry(0.04, 0.035, 0.06, 8).translate(0.3 + i * 0.12, 0.03, 0.15), '#e8e0d0')),
+  ]), paint({}));
+  tp.position.set(-2.2, 0.78, D / 2 + 2.3);
+  g.add(tp);
+  const light = new THREE.PointLight(0xffc98a, 0, 10, 1.8);
+  light.position.set(-1, 2.2, D / 2 + 1.5);
+  g.add(light);
+  place(g, B.x, B.z, B.rot, p.h);
+  const c = Math.cos(B.rot), s = Math.sin(B.rot);
+  const local = (x, z) => ({ x: B.x + x * c + z * s, z: B.z - x * s + z * c });
+  return {
+    group: g, colliders: worldColliders(k.colliders, B.x, B.z, B.rot), light,
+    spots: { table: local(-2.2, D / 2 + 2.3), table2: local(2.0, D / 2 + 2.3), door: local(1.6, D / 2 + 0.8), wall: local(-W / 2 - 1.1, D / 2 + 2.2), front: local(0, D / 2 + 4.6) },
+  };
+}
+
+// --- your hut ------------------------------------------------------------------------------
+
+function buildHut() {
+  const B = BUILDINGS.hut;
+  const p = PADS.hut;
+  const k = new Kit();
+  const W = B.w, D = B.d, F = B.floor, H = 2.5;
+  k.box(W + 0.6, F, D + 0.6, 0, -0.15, 0, STONE, { noise: 0.3 });
+  k.box(W, 0.05, D, 0, F - 0.05, 0, '#b9ad78'); // tatami-ish floor
+  k.box(W, H, 0.15, 0, F, D / 2, WOOD_L, { collide: true });
+  k.box(0.15, H, D, -W / 2, F, 0, WOOD_L, { collide: true });
+  k.box(0.15, H, D, W / 2, F, 0, WOOD_L, { collide: true });
+  const sw = (W - B.door.w) / 2;
+  k.box(sw, H, 0.15, -(B.door.w / 2 + sw / 2), F, -D / 2, WOOD_L, { collide: true });
+  k.box(sw, H, 0.15, B.door.w / 2 + sw / 2, F, -D / 2, WOOD_L, { collide: true });
+  k.box(B.door.w, 0.4, 0.16, 0, F + H - 0.4, -D / 2, WOOD_L);
+  k.geo(gableEnds(W, D, 1.2, F + H, (x, y, z) => vary(C(WOOD_L), 0.06, x, y, z)));
+  k.geo((() => { const g = gableRoof(W, D, 1.2, '#5c4a3a', 0.5); g.translate(0, F + H, 0); return g; })(), (x, y, z) => vary(C('#5c4a3a'), 0.08, x * 3, y * 3, z * 3));
+  k.box(W, 0.06, D, 0, F + H - 0.06, 0, '#7a5c44');
+  // inside: futon, desk, darkroom curtain
+  k.box(1.0, 0.18, 2.0, -W / 2 + 0.7, F, 0.6, '#d9d2c2').box(1.0, 0.08, 0.5, -W / 2 + 0.7, F + 0.18, 1.3, '#4a5a7a');
+  k.box(1.1, 0.35, 0.6, W / 2 - 0.8, F, 1.2, WOOD_D);
+  k.box(0.05, 2.0, 1.2, W / 2 - 0.9, F, -0.9, '#2e2830');
+  const g = new THREE.Group();
+  g.add(k.mesh());
+  const win = colorize(new THREE.PlaneGeometry(0.8, 0.6).rotateY(Math.PI / 2).translate(W / 2 + 0.09, F + 1.4, -0.2), '#fff');
+  g.add(new THREE.Mesh(merge([win, colorize(new THREE.PlaneGeometry(0.8, 0.6).rotateY(-Math.PI / 2).translate(-W / 2 - 0.09, F + 1.4, -0.4), '#fff')]), glow.window));
+  const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.26, 0.16), glow.lamp);
+  lamp.position.set(W / 2 - 0.5, F + 0.48, 1.2);
+  g.add(lamp);
+  const safelight = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), new THREE.MeshBasicMaterial({ color: 0xc0302a }));
+  safelight.position.set(W / 2 - 0.9, F + 2.1, -0.9);
+  g.add(safelight);
+  const light = new THREE.PointLight(0xffc98a, 0, 7, 1.8);
+  light.position.set(0, F + 1.9, 0.4);
+  g.add(light);
+  place(g, B.x, B.z, B.rot, p.h);
+  const c = Math.cos(B.rot), s = Math.sin(B.rot);
+  const local = (x, z) => ({ x: B.x + x * c + z * s, z: B.z - x * s + z * c });
+  return {
+    group: g, colliders: worldColliders(k.colliders, B.x, B.z, B.rot), light,
+    spots: { futon: local(-W / 2 + 0.7, 0.6), desk: local(W / 2 - 0.8, 1.2), darkroom: local(W / 2 - 1.0, -0.9), door: local(0, -D / 2 - 1.2) },
+  };
+}
+
+// --- bridge, benches, lamps ------------------------------------------------------------------
+
+function buildBridge() {
+  const { x0, z0, x1, z1, width } = BRIDGE;
+  const len = Math.hypot(x1 - x0, z1 - z0);
+  const ang = Math.atan2(z1 - z0, x1 - x0);
+  const parts = [];
+  const n = Math.ceil(len / 0.32);
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const x = x0 + (x1 - x0) * t, z = z0 + (z1 - z0) * t;
+    const y = bridgeHeight(x, z);
+    const g = new THREE.BoxGeometry(0.28, 0.08, width);
+    g.rotateY(-ang);
+    g.translate(x, y - 0.04, z);
+    parts.push(colorize(g, (px, py, pz) => vary(C(i % 3 ? WOOD_L : '#8f6d4f'), 0.06, px * 3, py, pz * 3)));
+    if (i % 4 === 0) {
+      for (const s of [-1, 1]) {
+        const px = x + Math.sin(ang) * s * (width / 2 - 0.05) * -1, pz = z + Math.cos(ang) * s * (width / 2 - 0.05);
+        const post = new THREE.BoxGeometry(0.1, 0.9, 0.1);
+        post.translate(px, y + 0.45, pz);
+        parts.push(colorize(post, WOOD));
+        const leg = new THREE.BoxGeometry(0.14, y - WATER_Y + 0.3, 0.14);
+        leg.translate(px, (y + WATER_Y - 0.3) / 2, pz);
+        parts.push(colorize(leg, WOOD_D));
+      }
+    }
+  }
+  // handrails following the arch
+  for (const s of [-1, 1]) {
+    for (let i = 0; i < n; i++) {
+      const t0 = i / n, t1 = (i + 1) / n;
+      const ax = x0 + (x1 - x0) * t0, az = z0 + (z1 - z0) * t0, bx = x0 + (x1 - x0) * t1, bz = z0 + (z1 - z0) * t1;
+      const ay = bridgeHeight(ax, az) + 0.88, by = bridgeHeight(bx, bz) + 0.88;
+      const off = [-Math.sin(ang) * s * (width / 2 - 0.05), Math.cos(ang) * s * (width / 2 - 0.05)];
+      const seg = new THREE.CylinderGeometry(0.035, 0.035, Math.hypot(bx - ax, by - ay, bz - az), 5);
+      seg.rotateZ(Math.PI / 2);
+      const pitch = Math.atan2(by - ay, Math.hypot(bx - ax, bz - az));
+      seg.rotateZ(pitch);
+      seg.rotateY(-ang);
+      seg.translate((ax + bx) / 2 + off[0], (ay + by) / 2, (az + bz) / 2 + off[1]);
+      parts.push(colorize(seg, '#8e3b2c'));
+    }
+  }
+  const m = new THREE.Mesh(merge(parts), paint({}));
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+}
+
+function bench(x, z, rot) {
+  const k = new Kit();
+  k.box(1.6, 0.07, 0.42, 0, 0.42, 0, WOOD_L).box(0.1, 0.42, 0.38, -0.65, 0, 0, WOOD_D).box(0.1, 0.42, 0.38, 0.65, 0, 0, WOOD_D);
+  const m = k.mesh();
+  place(m, x, z, rot, heightAt(x, z));
+  return { mesh: m, collider: { x, z, w: 1.6, d: 0.5, rot } };
+}
+
+function pathLamp(x, z) {
+  const k = new Kit();
+  k.box(0.22, 0.9, 0.22, 0, 0, 0, STONE, { noise: 0.3 }).box(0.42, 0.08, 0.42, 0, 1.2, 0, STONE);
+  k.geo(new THREE.ConeGeometry(0.34, 0.24, 4).rotateY(Math.PI / 4).translate(0, 1.4, 0), STONE);
+  const g = new THREE.Group();
+  g.add(k.mesh());
+  const l = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.28, 0.24), glow.lamp);
+  l.position.y = 1.04;
+  g.add(l);
+  place(g, x, z, 0, heightAt(x, z));
+  return g;
+}
+
+export function buildAll() {
+  const group = new THREE.Group();
+  const colliders = [];
+  const gate = buildGate();
+  const tower = buildTower();
+  const hall = buildHall();
+  const tea = buildTea();
+  const hut = buildHut();
+  for (const b of [gate, tower, hall, tea, hut]) { group.add(b.group); colliders.push(...b.colliders); }
+  group.add(buildBridge());
+  const benches = [[-8, 6, 1.2], [18, 20, -2.1], [6, -4.5, 0], [-12, -33, 0.6], [-6, 33, 0.8]].map(([x, z, r]) => bench(x, z, r));
+  benches.forEach((b) => { group.add(b.mesh); colliders.push(b.collider); });
+  const lamps = [[3, -26], [-1, -6], [-6, 4], [-5, 22], [-9, 32], [15, 32], [5, -50], [-4, -38], [21, 8]].map(([x, z]) => pathLamp(x, z));
+  lamps.forEach((l) => group.add(l));
+  return {
+    group, colliders, tower, hall, tea, hut,
+    benches: benches.map((b) => ({ x: b.collider.x, z: b.collider.z, rot: b.collider.rot })),
+    lights: [hall.light, tea.light, hut.light],
+  };
+}
+
+/** Night glow: windows and lamps light up as daylight fades. */
+export function updateGlow(built, atm, timeName) {
+  const night = timeName === 'night' ? 1 : timeName === 'evening' ? 0.75 : timeName === 'dawn' ? 0.6 : 0;
+  // by day, paper windows look like pale paper; by night they glow amber
+  const day = new THREE.Color('#9c9282'), lit = new THREE.Color('#f2a24a');
+  glow.window.color.copy(day).lerp(lit, night);
+  glow.lamp.color.copy(new THREE.Color('#b8ab90')).lerp(new THREE.Color('#ffb860'), night);
+  for (const l of built.lights) l.intensity = night * 6 + 0.4;
+}
