@@ -331,3 +331,20 @@ Final results: production build passes (44 modules; JS approximately 206.65 KB g
 Retained the newer `main` passing-thought stream, settings, reader interaction and camera-hiding behavior while keeping the refined human/wildlife models. The passing-thoughts log remains v2.5; the character refinement is v2.6.
 
 Post-merge validation: production build, all 14 model checks, all 23 production browser checks and the existing forest-audio check pass. A focused browser check also confirmed that the refined reader is recognized by the thought feature, lingering creates the bench interaction, and raising the camera hides the thought. No JavaScript errors were observed. Original comparison captures were preserved.
+
+---
+
+## v2.6: Music on the title screen
+*Date: 2026-11-04*
+
+### Your note
+The title screen was silent; you wanted the music to play there by default.
+
+### What changed
+- **The music starts as soon as the title screen appears** (unless you've chosen Silent), and continues into the game.
+- **Sound on / Silent take effect immediately** on the title screen, starting or stopping the music right away instead of only after Begin.
+- **Browsers only allow sound after a tap, click or key press.** If a browser holds the sound back, a small note reads **"Tap anywhere for sound"**. The music then starts on the very first interaction anywhere on the title screen, and the note disappears.
+
+### Tested (headless Chromium)
+- **Autoplay allowed:** on load the audio is running and music is audible (peak 0.02) with no note. Silent fades it to nothing; Sound on brings it back; it continues after Begin.
+- **Strict browser** (simulated: audio held until a real user interaction): before any tap the audio is suspended and "Tap anywhere for sound" shows. After one tap on an empty part of the title screen, the audio is running and the note is hidden.
