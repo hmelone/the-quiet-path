@@ -64,6 +64,8 @@ export function openSettings(root, onAudioNeeded) {
     seg('bellFrequency', [['off', 'Off'], ['occasional', 'Now and then'], ['frequent', 'Often']], 'How often the bell sounds', 'When it sounds, the valley pauses for three breaths.'),
     toggle('pauseForBell', 'Pause for three breaths', 'Turn off to keep walking while the bell sounds.'),
     toggle('captions', 'Sound captions', 'Shows important sounds as text, like a distant bell.'),
+    h('h3', {}, 'Thoughts'),
+    seg('thoughts', [['off', 'Off'], ['rare', 'Rarely'], ['occasional', 'Now and then']], 'Passing thoughts', 'Brief thoughts sometimes arise as you wander. Let them pass, or linger. They never appear in the camera or in photos.'),
     h('h3', {}, 'Comfort & accessibility'),
     seg('reducedMotion', [['system', 'Follow device'], ['on', 'On'], ['off', 'Off']], 'Reduced motion', 'Calmer movement: no drifting view, slower particles, quicker fades.'),
     seg('textSize', [['s', 'S'], ['m', 'M'], ['l', 'L'], ['xl', 'XL']], 'Text size'),

@@ -7,7 +7,7 @@ import { World } from './world3d/world.js';
 import { Player } from './world3d/player.js';
 import { zoneAt, KINDS } from './world3d/interactables.js';
 import { polyDist, groundAt } from './world3d/terrain.js';
-import { STREAM, pondDist, START } from './world3d/layout.js';
+import { STREAM, pondDist, START, POND } from './world3d/layout.js';
 import { game, TIMES, TIME_LABELS, ROLL_SIZE } from './core/state.js';
 import { settings } from './core/settings.js';
 import { Input } from './core/input.js';
@@ -23,6 +23,8 @@ import { Sitting } from './ui/sit.js';
 import { h, wait } from './ui/dom.js';
 import { openMenu, openSettings, openAlbum, openAbout, titleScreen, confirmBox } from './ui/panels.js';
 import { SCRIPTS, PROMPTS, onEnterZone, dayIntro } from './story/content.js';
+import { ThoughtStream } from './story/thoughts.js';
+import { ThoughtView } from './ui/thought.js';
 
 const NIGHT_FADE = '#0e1220';
 
@@ -83,6 +85,11 @@ class Game {
     this.dialog = new Dialog(this.ui);
     this.vf = new Viewfinder(this.ui, { shutter: () => this.shutter(), close: () => this.toggleCamera(false), focusChanged: () => {} });
     this.sitting = new Sitting(this.ui, { dialog: this.dialog, whisper: (t, ms) => this.hud.whisper(t, ms), audio });
+    // spontaneous thoughts
+    this.thoughtView = new ThoughtView(this.ui, { onRespond: (t, id) => this.onThought(t, id), onDone: () => this.thoughts.done() });
+    this.thoughts = new ThoughtStream((t) => this.thoughtView.show(t));
+    this.extraItems = [];
+    this.moment = { teaFor: 0, photosToday: 0, photoDay: 0, peopleNear: 0, readerNear: false, hienAt: null, noteAt: null, sentAlone: {} };
     this.flash = h('div', { class: 'flash' });
     this.devOverlay = h('div', { class: 'develop-overlay' });
     this.breath = h('div', { class: 'breath-pause', 'aria-live': 'polite', hidden: true }, h('div', { class: 'ring', 'aria-hidden': 'true' }), h('p'), h('button', { onclick: () => this.endBreath() }, 'Continue'));
@@ -200,7 +207,12 @@ class Game {
     if (!fn) return;
     this.mode = 'dialog';
     this.hud.show(false);
+    this.thoughtView.hideNow();
+    const cups = game.flag('teaCups') || 0;
     try { await fn(this.api()); } finally {
+      if (name === 'tea' && (game.flag('teaCups') || 0) > cups) this.thoughts.event('tea', 3);
+      if (name === 'hien') this.moment.hienAt = this.t;
+      if (name === 'note') this.moment.noteAt = this.t;
       if (this.mode === 'dialog') this.mode = 'explore';
       this.hud.show(this.mode === 'explore');
       if (this._pendingBreath) { this._pendingBreath = false; this.startBreath(); }
@@ -432,6 +444,7 @@ class Game {
   toggleCamera(on = !this.vf.active) {
     if (on && this.mode !== 'explore') return;
     if (on) {
+      this.thoughtView.hideNow(); // thoughts never appear in the viewfinder
       this.mode = 'camera';
       this.player.stop();
       this.hud.show(false);
@@ -500,6 +513,10 @@ class Game {
       audio.advance();
       this.vf.updateInfo(shot);
       if (subjects.length) this.hud.caption(`— ${subjects[0]}`);
+      const m = this.moment;
+      if (m.photoDay !== cond.day) { m.photoDay = cond.day; m.photosToday = 0; }
+      m.photosToday++;
+      this.thoughts.event('photo', 5); // may arise a little after you lower the camera
     } catch (err) {
       console.error(err);
       this.hud.whisper('The shutter stuck for a moment. Try again.');
@@ -709,6 +726,8 @@ class Game {
     this._acc.save += dt;
     if (this._acc.save > 3 && this.mode === 'explore') { this._acc.save = 0; this.savePos(); }
 
+    this.updateThoughts(dt);
+
     // the "walking…" banner with a Stop button
     const walking = !!px.route && this.mode === 'explore';
     if (!walking && this.walkingTo) this.walkingTo = null;
@@ -717,6 +736,59 @@ class Game {
     eng.render();
     if (this.mode === 'explore') this.layoutIcons();
     else if (this.hud.icons.size && this.mode !== 'dialog') this.hud.layout([], null);
+  }
+
+  /** Describe this moment to the thought stream, and let it decide. */
+  updateThoughts(dt) {
+    const m = this.moment, px = this.player;
+    const exploring = this.mode === 'explore' && !this.vf.active && !this.dialog.open;
+    if (!exploring && this.thoughtView.visible) this.thoughtView.hideNow();
+    this.thoughtView.update(dt);
+    // who is near (checked twice a second)
+    this._acc.people = (this._acc.people || 0) + dt;
+    if (this._acc.people > 0.5) {
+      this._acc.people = 0;
+      const people = this.world.people.list;
+      m.peopleNear = people.filter((p) => Math.hypot(p.fig.position.x - px.x, p.fig.position.z - px.z) < 10).length;
+      m.reader = people.find((p) => p.role === 'reading') || null;
+      m.readerNear = !!m.reader && Math.hypot(m.reader.fig.position.x - px.x, m.reader.fig.position.z - px.z) < 25;
+    }
+    const zone = this.zone?.id || 'valley';
+    m.teaFor = zone === 'tea' && !px.route ? m.teaFor + dt : zone === 'tea' ? m.teaFor : 0;
+    // warmth, later, while walking alone
+    const alone = m.peopleNear === 0 && zone !== 'tea' && px.moving;
+    if (alone && m.hienAt != null && this.t - m.hienAt > 60 && !m.sentAlone.hien) { m.sentAlone.hien = true; this.thoughts.event('aloneAfterHien', 0); }
+    if (alone && m.noteAt != null && this.t - m.noteAt > 45 && !m.sentAlone.note) { m.sentAlone.note = true; this.thoughts.event('aloneAfterNote', 0); }
+    this.thoughts.update(dt, {
+      canShow: exploring && !this.thoughtView.visible,
+      zone, time: game.s.time, weather: game.s.weather, flags: game.s.flags,
+      moving: px.moving, inTeaFor: m.teaFor, peopleNear: m.peopleNear, readerNear: m.readerNear,
+      photosToday: m.photosToday, rollLeft: ROLL_SIZE - game.s.roll.shots,
+    });
+  }
+
+  /** What a response opens up. Letting go never costs anything. */
+  onThought(t, id) {
+    const px = this.player;
+    if (id === 'stay') {
+      // a quieter moment to feel it; nothing to fix
+      audio.setDuck(0.7);
+      setTimeout(() => audio.setDuck(1), 9000);
+      return;
+    }
+    if (id !== 'linger') return;
+    audio.setDuck(0.6);
+    setTimeout(() => audio.setDuck(1), 12000);
+    if (t.effect === 'pond') {
+      // turn gently toward the water to enjoy it
+      const pd = Math.hypot(POND.x - px.x, POND.z - px.z);
+      if (pd < 45 && !this.input.dragging) px.lookTarget = Math.atan2(-(POND.x - px.x), -(POND.z - px.z));
+    } else if (t.effect === 'reader' && this.moment.reader) {
+      const f = this.moment.reader.fig.position;
+      this.extraItems.push({ id: 'reader', kind: 'talk', label: 'The person on the bench', x: f.x, z: f.z, y: f.y + 1.7, script: 'reader', until: this.t + 240, range: 30 });
+    } else if (t.effect === 'thankHien') {
+      game.setFlag('wantThankHien');
+    }
   }
 
   layoutIcons() {
@@ -736,16 +808,17 @@ class Game {
       if (animalItems.some((i) => i.akind === a.kind)) continue; // one icon per kind
       animalItems.push({ id: `animal-${a.kind}`, akind: a.kind, kind: 'look', label: animalLabel[a.kind], dynamic: () => a.obj, iconY: animalIcon[a.kind], script: `animal_${a.kind}` });
     }
-    for (const it of [...this.world.interactables, ...animalItems]) {
+    this.extraItems = this.extraItems.filter((x) => !x.until || x.until > this.t);
+    for (const it of [...this.world.interactables, ...animalItems, ...this.extraItems]) {
       if (it.visible && !it.visible(cond)) continue;
       const p = this.itemPos(it);
       const d = Math.hypot(p.x - px.x, p.z - px.z);
-      if (d > (it.akind ? 22 : 16)) continue;
+      if (d > (it.range || (it.akind ? 22 : 16))) continue;
       // things inside a building only show from inside (and vice versa), except doorways
       const itInside = ['cushion', 'altar', 'bowlBell', 'callig', 'futon', 'desk', 'smallBell', 'note', 'darkroom'].includes(it.id);
       const isDoor = it.id === 'hallDoor' || it.id === 'hutDoor';
       if (isDoor ? insideNow : itInside !== insideNow) continue;
-      if (d < 7) near.push({ it, d });
+      if (d < 7 || (it.range && d < it.range)) near.push({ it, d: it.range ? Math.min(d, 6.9) : d });
       v.set(p.x, p.y, p.z).project(cam);
       if (v.z > 1 || Math.abs(v.x) > 1.05 || Math.abs(v.y) > 1.05) continue;
       items.push({ it, x: (v.x * 0.5 + 0.5) * innerWidth, y: (1 - (v.y * 0.5 + 0.5)) * innerHeight, dist: d });

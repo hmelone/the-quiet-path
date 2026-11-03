@@ -172,6 +172,19 @@ export const SCRIPTS = {
     }
     api.refresh();
   },
+  async reader(api) {
+    const c = await api.say({
+      title: 'On the bench',
+      text: 'A visitor sits with a book open on their knee, not really reading it. They look up as you come near.',
+      choices: [{ id: 'hello', label: 'Say hello, and ask how their stay is going' }, { id: 'sit', label: 'Sit at the other end of the bench, quietly' }],
+    });
+    if (c === 'hello') {
+      await api.say({ title: 'On the bench', text: '“It’s my first time somewhere like this,” they say. “I wasn’t sure I’d fit in.” You talk a little about the fish, the bell, nothing much. When you stand to go, they say, “Thank you. That helped.”' });
+    } else {
+      await api.say({ title: 'On the bench', text: 'You sit. Neither of you says anything. After a while they close the book and just look at the water too. It feels like company.' });
+    }
+    api.setFlag('satWithReader');
+  },
   async kitchen(api) {
     const t = api.time;
     await api.say({ text: t === 1 || t === 2 ? 'Through the open door: steam, a big pot, someone chopping in a slow, even rhythm. A sign by the door says that today’s cooks are practising silence.' : 'The kitchen is quiet now. Clean bowls are stacked to dry, rims down, in a long row.' });
@@ -181,6 +194,7 @@ export const SCRIPTS = {
     if (c === 'drink') {
       await api.say({ text: 'The tea is pale and a little smoky. You hold the cup in both hands until it is just cool enough. You notice, sip by sip, that you are only drinking tea.' });
       api.setFlag('hadTea');
+      api.setFlag('teaCups', (api.flag('teaCups') || 0) + 1);
     }
   },
   async plum(api) {
@@ -191,6 +205,20 @@ export const SCRIPTS = {
   },
   async hien(api) {
     const n = api.flag('hienTalk') || 0;
+    if (api.flag('wantThankHien') && !api.flag('thankedHien') && n >= 1) {
+      const c = await api.say({
+        title: 'Sister Hien',
+        text: 'Sister Hien looks up from what she’s doing.',
+        choices: [{ id: 'thank', label: 'Thank her for taking the time to explain the bell' }, { id: 'later', label: 'Just smile, and leave her to her work' }],
+      });
+      if (c === 'thank') {
+        await api.say({ title: 'Sister Hien', text: 'She laughs, a little surprised, and joins her palms. “Thank you for telling me. It’s good to know the bell found someone.”' });
+      } else {
+        await api.say({ title: 'Sister Hien', text: 'She smiles back, and returns to her work. Some thanks don’t need words.' });
+      }
+      api.setFlag('thankedHien');
+      return;
+    }
     if (n === 0) {
       const c = await api.say({
         title: 'Sister Hien',
