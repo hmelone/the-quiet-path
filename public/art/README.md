@@ -1,0 +1,5 @@
+# The Quiet Path · Plum light title artwork
+
+`retreat-wide.webp` and `retreat-portrait.webp` are original illustrations created for this iteration with OpenAI image generation (November 2026), directed around this game's fictional timber-and-plaster retreat, flowering plum, lotus pond, weathered stone and blue-green mountain palette. The portrait illustration was recomposed from the wide original rather than cropping away the hall. No third-party stock, models or textures are included. These are fictional concept illustrations, not documentation of an actual Plum Village building or practice.
+
+Source PNGs were generated at 1672 × 941 (wide) and 941 × 1672 (portrait). Distribution images are WebP, quality 84 / 82, 1672 × 941 and 900 × 1599; approximately 274 KB + 247 KB. Only the matching orientation is requested by `<picture>`; no external image host is needed. Original output PNGs remain outside the checkout under `/workspace/generated_images/` for this session. The title uses live HTML text and controls, not baked-in lettering. Art is a still image for all motion preferences; reduced-motion disables its entrance fade.

@@ -186,3 +186,30 @@ Respond to v1 playtesting: free walking in 3D, a Plum Village–style practice c
   - **An owl** on a branch at dusk and at night, slowly turning its head.
   - **Forest sounds:** a woodpecker drumming by day, owl hoots at night.
   - **You can look at** deer, the fox, rabbits and the owl: an icon follows them, and each has a short gentle description. They can also be named in photos.
+
+---
+
+## v2.3: Plum Light — a class art iteration
+*Date: November 3, 2026 · based on latest `main`, `18fa928`*
+
+### Direction and implementation
+
+Start at the hut and look toward the pond: a flowering plum with open, irregular branches, worn stepping stones, mossy edging, fine curved grasses, ground cover and scattered petals now frame the walk. Three cedar silhouettes and quieter sage/ochre broadleaf colors vary the grove. A more muted meadow palette and blue-green afternoon air replace the yellow-green wash. Mist begins farther from the viewer; smaller, lighter banks stay on the slopes, keeping the hall legible.
+
+The opening uses two original, locally served WebP illustrations (wide and portrait, approximately 521 KB combined), made for this fictional retreat. The compositions share the plum/pond/timber hall palette; readable live serif text and at least 52px primary controls sit above the art. Continue preserves existing progress; Begin retains the existing new-stay confirmation. The art is still, reduced motion disables the fade, and the hidden game scene no longer renders behind it. There are no new runtime dependencies.
+
+Existing koi were almost hidden by the previous 92%-opaque water. They now have more readable tapered bodies, eyes, fins and moving tails, varied continuous gliding paths under the surface, and calmer water with view-dependent transparency, sky reflections and soft reed shadows. Fish stay inside the basin, sometimes moving out from the reed edge. Photo subject positions now match the fish's actual underwater height and ignore invisible wildlife. Fish remain ordinary scene geometry and pass through the existing film and IndexedDB save pipeline.
+
+Monastics and lay visitors have shoulders, sleeves, hands, feet and human head profiles, with varied proportions and existing routines. Architecture keeps its distinct hall / stone tea farmhouse / modest hut silhouettes. Added details include warm floorboard seams, hall window frames and veranda shoes, repaired tea tables with cups and kettles, a hut quilt and notebook, and a darkroom bench with enlarger, trays, tongs, clipped negatives and a soft safelight. Existing navigation colliders and interaction locations remain intact; new plum trunks are blocked for walking. Figure geometry is released when routines rebuild.
+
+### Evidence and verification
+
+The [review gallery](art-pass/README.md) contains the fixed-pose hut comparison, desktop and phone title captures, playable phone view, hall and darkroom views, and an actual saved fish JPEG. The before capture is from an untouched archive of latest main; both hut views use `(19,38)`, yaw `0.283`, pitch `0.04`, 62° lens, 1440×900, day-one afternoon mist. This approximates the supplied screenshot's direction, rather than claiming the exact original camera parameters.
+
+`npm run build` passes. The repeatable `scripts/art-pass-smoke.py` runs against the production preview under `/the-quiet-path/`, using isolated browser storage and software WebGL. See [checks.json](art-pass/checks.json) for actual outcomes. It checks startup/save choices, v2 progress and roll retention, route availability from hut to pond/hall/interior, keyboard and touch exploration, interaction dialogs, reduced motion, fish continuity and underwater bounds, and saved photography through reload and album. A second exposure with fish hidden distinguishes real fish pixels from random film grain. No deployment or real-device FPS claim is made.
+
+### Sources and remaining work
+
+All new 3D geometry is original procedural work. Title illustrations were generated specifically for the project; [credits](../CREDITS.md) and [art provenance](../public/art/README.md) record the source. No stock art, models or textures were imported. Buildings and people are fictional design interpretations, not verified reconstructions of a Plum Village site; no new religious authenticity claim or practice text is introduced.
+
+Deferred refinements: more expressive walking/seated animation and individual clothing variations, seasonal blossom changes, finer bark/wood texture painting, extra orchard tools and personal hut objects, and physical-phone performance/contrast playtests. The requested priority scene, title and fish are complete, with a first pass on all listed interior prop categories. Water reflects the sky/light rather than rendering a second mirrored world, to limit mobile cost.

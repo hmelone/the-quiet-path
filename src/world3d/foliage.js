@@ -25,21 +25,64 @@ function trunkGeo(h, r0, r1, col, lean = 0) {
 
 export function cedarGeo(seed = 1) {
   const rng = new Rng(`cedar${seed}`);
-  const parts = [trunkGeo(4, 0.3, 0.18, C('#6b4532'))];
-  const tiers = 6;
+  const height = rng.range(10.5, 14.8), width = rng.range(1.5, 2.5);
+  const lean = rng.g() * 0.9;
+  const parts = [trunkGeo(height * 0.9, 0.27, 0.06, C('#6b5140'), lean)];
+  // Unequal, overlapping boughs give a broken edge rather than stacked cones.
+  const tiers = 8;
   for (let i = 0; i < tiers; i++) {
-    const t = i / (tiers - 1);
-    const r = 2.0 * (1 - t * 0.78) + rng.range(-0.15, 0.15);
-    const h = 3.2 - t * 1.2;
-    const y = 2.6 + t * 9.5;
-    const g = new THREE.ConeGeometry(r, h, 9, 2, true);
-    g.translate(rng.g() * 0.15, y + h / 2, rng.g() * 0.15);
-    jitter(g, 0.35, 1.3, seed + i);
-    radialNormals(g, 0, y + h * 0.15, 0, 0.6);
-    parts.push(colorize(g, (x, yy, z, c) => {
+    const t = i / (tiers - 1), y = 2 + t * (height - 3.1);
+    const r = width * (1 - t * 0.85) * rng.range(0.8, 1.2);
+    const h = 2.5 - t * 0.9;
+    const g = new THREE.ConeGeometry(r, h, 10, 2, true);
+    g.scale(1, 1, rng.range(0.7, 1.1));
+    g.rotateY(i * 1.7);
+    g.translate(lean * t + rng.g() * 0.35, y + h / 2, rng.g() * 0.22);
+    jitter(g, 0.38, 1.3, seed + i);
+    radialNormals(g, lean * t, y + h * 0.15, 0, 0.55);
+    parts.push(colorize(g, (x, yy, z) => {
       const tip = (yy - y) / h;
-      return vary(C('#24402f').lerp(C('#4d7148'), 0.25 + tip * 0.35 + (x + z) * 0.03), 0.07, x, yy, z, seed);
+      return vary(C('#2d4c43').lerp(C('#6d8c70'), 0.2 + tip * 0.4 + x * 0.04), 0.07, x, yy, z, seed);
     }));
+  }
+  return merge(parts);
+}
+
+function branchGeo(from, to, r0, r1, seed) {
+  const a = new THREE.Vector3(...from), b = new THREE.Vector3(...to), d = b.clone().sub(a);
+  const g = new THREE.CylinderGeometry(r1, r0, d.length(), 6, 1);
+  g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()));
+  g.translate(...a.add(b).multiplyScalar(0.5).toArray());
+  return colorize(g, (x, y, z) => vary(C('#604b47'), 0.07, x, y, z, seed));
+}
+
+/** A reusable, entirely procedural plum: open branches and small painted blossom sprays. */
+export function plumTreeGeo(seed = 1, flowering = true) {
+  const rng = new Rng(`plum-${seed}`), parts = [];
+  const fork = [0.28, 1.9, 0.1];
+  parts.push(branchGeo([0, 0, 0], [-0.2, 0.95, 0.12], 0.32, 0.25, seed));
+  parts.push(branchGeo([-0.2, 0.95, 0.12], fork, 0.25, 0.18, seed));
+  for (let i = 0; i < 6; i++) {
+    const a = i * 2.4 + seed * 0.8, r = rng.range(1.4, 2.8);
+    const bend = [Math.cos(a) * r * 0.6, rng.range(2.5, 3.7), Math.sin(a) * r * 0.6];
+    const tip = [Math.cos(a) * r, bend[1] + rng.range(0.25, 1.1), Math.sin(a) * r];
+    parts.push(branchGeo(fork, bend, 0.13, 0.075, seed + i));
+    parts.push(branchGeo(bend, tip, 0.075, 0.018, seed + i));
+    for (let j = 0; j < 4; j++) {
+      const t = 0.35 + j * 0.2;
+      const p = bend.map((v, k) => v + (tip[k] - v) * t);
+      const q = [p[0] + rng.g() * 0.8, p[1] + rng.range(0.15, 0.65), p[2] + rng.g() * 0.8];
+      parts.push(branchGeo(p, q, 0.035, 0.009, seed + j));
+      for (let k = 0; k < 4; k++) {
+        const x = q[0] + rng.g() * 0.65, y = q[1] + rng.g() * 0.38, z = q[2] + rng.g() * 0.65;
+        const g = new THREE.IcosahedronGeometry(rng.range(0.18, 0.36), k === 0 ? 1 : 0);
+        g.scale(1.1, rng.range(0.5, 0.8), 1);
+        g.translate(x, y, z);
+        radialNormals(g, x, y - 0.1, z, 0.8);
+        const col = C(rng.pick(flowering ? ['#efc8ce', '#f8e5dc', '#d7a0b1', '#f4d5d8'] : ['#779274', '#a5b68b', '#627f67']));
+        parts.push(colorize(g, (xx, yy, zz) => vary(col, 0.07, xx * 3, yy * 3, zz * 3, seed)));
+      }
+    }
   }
   return merge(parts);
 }
@@ -86,17 +129,43 @@ function bushGeo(seed, col, flowers) {
   return merge(parts);
 }
 
-function grassGeo() {
+function grassGeo(seed = 1) {
+  const parts = [], rng = new Rng(`grass-${seed}`);
+  for (let i = 0; i < 7; i++) {
+    const a = i * 2.4, h = rng.range(0.2, 0.55), w = rng.range(0.015, 0.035);
+    const g = new THREE.PlaneGeometry(w * 2, h, 1, 3);
+    g.translate(0, h / 2, 0);
+    const p = g.attributes.position;
+    for (let j = 0; j < p.count; j++) {
+      const t = p.getY(j) / h;
+      p.setX(j, p.getX(j) * (1 - t * 0.9));
+      p.setZ(j, t * t * h * 0.55);
+    }
+    g.rotateY(a).translate(Math.cos(a) * 0.08, 0, Math.sin(a) * 0.08);
+    radialNormals(g, 0, -0.4, 0);
+    parts.push(colorize(g, (x, y) => C('#637956').lerp(C('#b1bc86'), Math.min(1, y / h))));
+  }
+  return merge(parts);
+}
+
+function groundCoverGeo() {
   const parts = [];
-  for (let i = 0; i < 5; i++) {
-    const a = (i / 5) * Math.PI + 0.3;
-    const g = new THREE.BufferGeometry();
-    const w = 0.06, h = 0.38 + (i % 3) * 0.1, lean = 0.08;
-    const cx = Math.cos(a), cz = Math.sin(a);
-    const pos = [-w * cx, 0, -w * cz, w * cx, 0, w * cz, lean * cz, h, -lean * cx];
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    g.setAttribute('normal', new THREE.Float32BufferAttribute([0, 1, 0, 0, 1, 0, 0, 1, 0], 3));
-    parts.push(colorize(g, (x, y) => C('#3d5a28').lerp(C('#8fa452'), Math.min(1, y / h))));
+  for (let i = 0; i < 10; i++) {
+    const a = i * 2.4, r = 0.1 + (i % 4) * 0.065;
+    const g = new THREE.CircleGeometry(0.08, 6);
+    g.rotateX(-Math.PI / 2 + 0.2).rotateY(a);
+    g.translate(Math.cos(a) * r, 0.025 + (i % 3) * 0.025, Math.sin(a) * r);
+    parts.push(colorize(g, i % 3 === 0 ? '#a3b38a' : '#65866b'));
+  }
+  return merge(parts);
+}
+
+function petalGeo() {
+  const parts = [];
+  for (let i = 0; i < 6; i++) {
+    const g = new THREE.CircleGeometry(0.045, 5);
+    g.scale(0.7, 1, 1).rotateX(-Math.PI / 2).translate(Math.cos(i * 2.4) * (0.1 + i * 0.09), 0.018, Math.sin(i * 2.4) * (0.1 + i * 0.09));
+    parts.push(colorize(g, i % 2 ? '#efd7d1' : '#ce9cae'));
   }
   return merge(parts);
 }
@@ -189,7 +258,7 @@ function instanced(geo, mat, items, { shadow = true, colorJitter = 0.06 } = {}) 
   items.forEach((it, i) => {
     o.position.set(it.x, it.y, it.z);
     o.rotation.set(0, it.rot || 0, 0);
-    o.scale.setScalar(it.s || 1);
+    o.scale.set((it.s || 1) * (it.sx || 1), it.s || 1, (it.s || 1) * (it.sz || 1));
     if (it.sy) o.scale.y = it.sy * (it.s || 1);
     o.updateMatrix();
     m.setMatrixAt(i, o.matrix);
@@ -219,23 +288,23 @@ export function buildFoliage(tier) {
     if (rng.f() > Math.min(1, forest) * (0.4 + patch)) continue;
     if (!freeSpot(x, z, 3)) continue;
     const s = rng.range(0.8, 1.35) * (1 + Math.min(1, Math.abs(x) / 90) * 0.4);
-    cedarItems.push({ x, y: heightAt(x, z) - 0.2, z, s, rot: rng.f() * 6 });
+    cedarItems.push({ x, y: heightAt(x, z) - 0.2, z, s, rot: rng.f() * 6, sy: rng.range(0.83, 1.15) });
     if (Math.abs(x) < 40 && z > -80) obstacles.push({ x, z, r: 0.6 });
   }
-  const cedarGeos = [cedarGeo(1), cedarGeo(2)];
+  const cedarGeos = [cedarGeo(1), cedarGeo(2), cedarGeo(3)];
   const cedarMat = paint({ sway: 0.22, swayHeight: 14 });
   // only trees near the walkable valley cast shadows (much cheaper on phones)
   const nearValley = (it) => Math.abs(it.x) < 34 && it.z > -84 && it.z < 64;
   cedarGeos.forEach((g, k) => {
-    const mine = cedarItems.filter((_, i) => i % 2 === k);
+    const mine = cedarItems.filter((_, i) => i % cedarGeos.length === k);
     group.add(instanced(g, cedarMat, mine.filter(nearValley), { shadow: true }));
     const far = mine.filter((it) => !nearValley(it));
     if (far.length) group.add(instanced(g, cedarMat, far, { shadow: false }));
   });
 
   // maples & broadleaf trees around the valley floor
-  const mapleGreens = ['#6f9a3e', '#83a84a', '#5f8a3a', '#9ab35a'];
-  const mapleReds = ['#9b3a2a', '#b2502e', '#7f3324'];
+  const mapleGreens = ['#799568', '#91a87a', '#587d60', '#b0b88a'];
+  const mapleReds = ['#a47560', '#bd9675', '#8d6c64'];
   const broadItems = [[], [], []];
   for (let i = 0; i < 700 * dens; i++) {
     const x = rng.range(-60, 60), z = rng.range(-70, 62);
@@ -262,7 +331,16 @@ export function buildFoliage(tier) {
       obstacles.push({ x, z, r: 0.45 });
     }
   }
-  group.add(instanced(broadTreeGeo(7, ['#7fa04c', '#91b05a', '#6c9244'], { height: 4.2, spread: 2.4, trunkCol: '#4a3a30' }), broadMat, plumItems));
+  group.add(instanced(plumTreeGeo(7), broadMat, plumItems.filter((_, i) => i % 3 !== 0)));
+  group.add(instanced(plumTreeGeo(11, false), broadMat, plumItems.filter((_, i) => i % 3 === 0)));
+
+  // Landmark trees frame the walk without closing the view to the pond and hall.
+  const heroPlums = [{ x: 12.5, z: 31.5, s: 1.08, rot: 0.4 }, { x: 25.7, z: 30.6, s: 1.0, rot: 2.1 }];
+  for (const it of heroPlums) {
+    it.y = heightAt(it.x, it.z);
+    obstacles.push({ x: it.x, z: it.z, r: 0.55 });
+  }
+  group.add(instanced(plumTreeGeo(17), paint({ sway: 0.06, swayHeight: 5 }), heroPlums));
   group.userData.plums = plumItems;
 
   // bushes (azaleas near the hall and pond, some with flowers)
@@ -341,9 +419,44 @@ export function buildFoliage(tier) {
     if (!freeSpot(x, z, 0.1)) continue;
     const meadow = fbm2(x * 0.07, z * 0.07, 5);
     if (rng.f() > meadow * 1.3) continue;
-    grassItems.push({ x, y: heightAt(x, z) - 0.02, z, s: rng.range(0.7, 1.6), rot: rng.f() * 6 });
+    grassItems.push({ x, y: heightAt(x, z) - 0.02, z, s: rng.range(0.6, 1.25), rot: rng.f() * 6 });
   }
-  group.add(instanced(grassGeo(), paint({ sway: 0.35, swayHeight: 0.6, side: THREE.DoubleSide }), grassItems, { shadow: false, colorJitter: 0.15 }));
+  group.add(instanced(grassGeo(), paint({ sway: 0.35, swayHeight: 0.6, side: THREE.DoubleSide }), grassItems, { shadow: false, colorJitter: 0.10 }));
+
+
+  // Low leaves, petals and worn stepping stones create a quiet, readable foreground.
+  // All are batched; none obstruct the existing walkable route.
+  const cover = [], petals = [], edging = [], steps = [];
+  const detailRng = new Rng('hut-garden');
+  for (let i = 0; i < 750 * tier.grass; i++) {
+    const x = detailRng.range(8, 30), z = detailRng.range(23, 42);
+    if (Object.values(BUILDINGS).some((b) => inBuilding(b, x, z, 0.7))) continue;
+    const d = polyDist(PATHS.find((p) => p.id === 'toHut').pts, x, z);
+    if (d < 1.05 || pondDist(x, z) < 1.1) continue;
+    cover.push({ x, z, y: heightAt(x, z) + 0.015, s: detailRng.range(0.6, 1.6), rot: detailRng.f() * 6 });
+    if (Math.hypot(x - 12.5, z - 31.5) < 4.8 && detailRng.f() < 0.6) {
+      petals.push({ x, z, y: heightAt(x, z) + 0.025, s: detailRng.range(0.7, 1.4), rot: detailRng.f() * 6 });
+    }
+  }
+  const hutPath = PATHS.find((p) => p.id === 'toHut').pts;
+  for (let j = 0; j < hutPath.length - 1; j++) {
+    const a = hutPath[j], b = hutPath[j + 1];
+    const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
+    for (let d = 0.5; d < len; d += 0.9) {
+      const t = d / len;
+      const x = a[0] + dx * t, z = a[1] + dz * t;
+      steps.push({ x, z, y: heightAt(x, z) - 0.015, s: 0.5, sy: 0.08, sx: 1.15, sz: 0.8, rot: detailRng.f() * 6 });
+      if (detailRng.f() < 0.55) {
+        const side = detailRng.f() < 0.5 ? -1 : 1;
+        const ex = x + dz / len * 1.15 * side, ez = z - dx / len * 1.15 * side;
+        edging.push({ x: ex, z: ez, y: heightAt(ex, ez) - 0.05, s: detailRng.range(0.18, 0.35), sy: 0.5, rot: detailRng.f() * 6 });
+      }
+    }
+  }
+  group.add(instanced(groundCoverGeo(), paint({ side: THREE.DoubleSide, sway: 0.03, swayHeight: 0.4 }), cover, { shadow: false }));
+  group.add(instanced(petalGeo(), paint({ side: THREE.DoubleSide }), petals, { shadow: false }));
+  group.add(instanced(stoneGeo(7), paint({}), edging, { shadow: false }));
+  group.add(instanced(stoneGeo(11), paint({}), steps, { shadow: false }));
 
   return { group, obstacles };
 }

@@ -8,7 +8,7 @@ const SUN = {
   dawn: [0.9, 0.12, -0.3], morning: [0.6, 0.65, -0.35], afternoon: [-0.55, 0.75, 0.2],
   evening: [-0.92, 0.1, 0.25], night: [0.3, 0.7, -0.4],
 };
-const FOG = { clear: [45, 430], overcast: [30, 300], mist: [6, 120], rain: [15, 190], snow: [15, 200] };
+const FOG = { clear: [45, 430], overcast: [30, 300], mist: [30, 255], rain: [15, 190], snow: [15, 200] };
 
 export const TIERS = {
   low:    { pixelRatio: 1,   shadows: 0,    antialias: false, trees: 0.55, grass: 0.35, photoW: 1200 },
@@ -94,7 +94,7 @@ export class Engine {
     const mu = this.mountains.userData.uniforms;
     mu.uTint.value.copy(tint).multiplyScalar(night ? 1.2 : 1);
     mu.uHaze.value.copy(fogCol);
-    mu.uHazeAmt.value = Math.min(0.9, 0.3 + atm.fogAmt * 0.8 + (weather === 'mist' ? 0.35 : 0) + (weather === 'rain' ? 0.25 : 0));
+    mu.uHazeAmt.value = Math.min(0.72, 0.18 + atm.fogAmt * 0.55 + (weather === 'mist' ? 0.16 : 0) + (weather === 'rain' ? 0.2 : 0));
     shared.uWind.value = atm.wind;
   }
 

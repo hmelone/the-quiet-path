@@ -1,7 +1,7 @@
 // Ordinary wildlife: deer at the forest edge, a heron, koi, a sleeping cat,
 // orchard squirrels, small birds overhead and fireflies on warm evenings.
 import * as THREE from 'three';
-import { Rng, noise1 } from '../core/rng.js';
+import { Rng } from '../core/rng.js';
 import { colorize, merge, radialNormals } from './geo.js';
 import { paint } from './materials.js';
 import { groundAt } from './terrain.js';
@@ -59,12 +59,30 @@ function squirrelGeo() {
   return merge(p);
 }
 
-function koiGeo() {
+// A small, reusable fish with a tapered body, paired fins and dark eyes.
+// Its separate tail pivots while gliding; no textures or skeletal rig required.
+function koiGeo(seed = 0) {
   const p = [];
-  const b = new THREE.SphereGeometry(0.12, 8, 6).scale(2.4, 0.5, 0.8);
-  p.push(colorize(b, (x) => (Math.sin(x * 18) > 0.3 ? new THREE.Color('#f2ece0') : new THREE.Color('#e8742c'))));
-  p.push(colorize(new THREE.ConeGeometry(0.08, 0.16, 4).rotateZ(Math.PI / 2).translate(-0.34, 0, 0).scale(1, 0.4, 1), '#e8742c'));
+  const body = new THREE.SphereGeometry(0.14, 12, 8).scale(2.5, 0.65, 1);
+  p.push(colorize(body, (x, y, z) => {
+    const patch = Math.sin(x * 14 + seed * 2) + Math.sin(z * 20 + seed);
+    return new THREE.Color(patch > 0.4 ? '#bd6235' : seed % 3 === 0 ? '#dfb86d' : '#eee0c4');
+  }));
+  for (const side of [-1, 1]) {
+    p.push(colorize(new THREE.SphereGeometry(0.018, 6, 4).translate(0.25, 0.04, side * 0.075), '#242d29'));
+    p.push(colorize(new THREE.ConeGeometry(0.085, 0.16, 3).rotateX(side * 0.7).rotateZ(0.9).translate(0.01, -0.03, side * 0.15), '#c69a68'));
+  }
   return merge(p);
+}
+
+function koiTailGeo() {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute([
+    0, 0, 0, -0.27, 0.015, -0.15, -0.21, 0, 0,
+    0, 0, 0, -0.21, 0, 0, -0.27, 0.015, 0.15,
+  ], 3));
+  g.computeVertexNormals();
+  return colorize(g, '#c38b59');
 }
 
 function rabbitGeo() {
@@ -178,10 +196,18 @@ export class Animals {
       const a = 2.2;
       this.addAnimal(g, { kind: 'heron', label: 'a heron at the pond', x: POND.x + Math.cos(a) * POND.rx * 1.02, z: POND.z + Math.sin(a) * POND.rz * 1.02, yaw: -1.2 });
     }
-    // koi always; they rise toward the surface in rain
+    // Fish weave from the reed shadows into open water, in every weather.
+    const tailGeo = koiTailGeo();
+    const finMat = paint({ side: THREE.DoubleSide });
     for (let i = 0; i < 7; i++) {
-      const g = new THREE.Mesh(koiGeo(), this.mat);
-      this.addAnimal(g, { kind: 'koi', label: 'koi beneath the surface', x: POND.x, z: POND.z, seed: i * 13.7, speed: this.rng.range(0.02, 0.04) });
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(koiGeo(i), this.mat);
+      const tail = new THREE.Mesh(tailGeo, finMat);
+      tail.position.x = -0.31;
+      g.add(body, tail);
+      g.scale.setScalar(1.15 + (i % 3) * 0.12);
+      this.addAnimal(g, { kind: 'koi', label: 'koi beneath the surface',
+        x: POND.x, z: POND.z, seed: i * 1.79, speed: 0.07 + i * 0.007, tail });
     }
     // the cat, asleep on the hall veranda
     if (time >= 2 || time === 0) {
@@ -325,12 +351,16 @@ export class Animals {
         o.rotation.z = Math.sin(t * 0.3) * 0.03;
       } else if (a.kind === 'koi') {
         a.t += dt * go;
-        const u = noise1(a.t * a.speed * 10 + a.seed), v = noise1(a.t * a.speed * 13 + a.seed + 40);
-        let x = POND.x + (u - 0.5) * POND.rx * 1.6, z = POND.z + (v - 0.5) * POND.rz * 1.6;
-        if (pondDist(x, z) > 0.85) { x = POND.x + (x - POND.x) * 0.7; z = POND.z + (z - POND.z) * 0.7; }
-        const px = o.position.x, pz = o.position.z;
-        o.position.set(x, WATER_Y - (this.weather === 'rain' ? 0.06 : 0.14), z);
-        if (Math.hypot(x - px, z - pz) > 1e-4) o.rotation.y = Math.atan2(-(z - pz), x - px);
+        const ph = a.seed + a.t * a.speed;
+        // Bounded, continuous orbits: broad turns rather than noise teleports.
+        // The smaller harmonic brings fish out from the reed-lined east shore.
+        const radius = 0.52 + 0.18 * Math.sin(ph * 0.63 + a.seed);
+        const x = POND.x + Math.cos(ph) * POND.rx * radius;
+        const z = POND.z + Math.sin(ph) * POND.rz * radius;
+        const prevX = o.position.x, prevZ = o.position.z;
+        o.position.set(x, WATER_Y - 0.22 - Math.sin(ph * 1.7) * 0.045, z);
+        if (Math.hypot(x - prevX, z - prevZ) > 1e-5) o.rotation.y = Math.atan2(-(z - prevZ), x - prevX);
+        a.tail.rotation.y = Math.sin(a.t * 3.2 + a.seed) * 0.32;
       } else if (a.kind === 'cat') {
         o.scale.y = 1 + Math.sin(t * 1.2) * 0.04;
       } else if (a.kind === 'squirrel') {

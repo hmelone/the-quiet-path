@@ -1,10 +1,10 @@
 # Credits
 
 **Design & direction:** the project author (class project).
-**Development assistance:** Claude Code.
+**Development assistance:** Claude Code; Codex (Plum Light art iteration).
 
 ## Art
-All visuals are built and painted procedurally in code (`src/world3d/`, `src/paint/`). There are no third-party models or images.
+The playable world is built and painted procedurally in original code (`src/world3d/`, `src/paint/`), including the plum trees, human figures, fish and interior props. The two original title illustrations were created with OpenAI image generation for this project, then optimized as locally served WebP assets. See [`public/art/README.md`](public/art/README.md) for provenance and sizes. No third-party models, stock images or textures were imported. The retreat and its architecture are fictional; the illustrations are not depictions of an actual Plum Village site.
 
 ## Sound & music
 All sound and music is synthesised in the browser with the Web Audio API (`src/audio/`). There are no recorded samples.

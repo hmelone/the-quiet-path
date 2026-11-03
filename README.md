@@ -38,7 +38,7 @@ If the repository has a different name, change `base` in `vite.config.js` to mat
 ## How it's built
 
 - **Vite + plain JavaScript**, with no framework.
-- **Three.js 3D world** (`src/world3d/`). The valley, trees, buildings, water, people and animals are all built in code, with soft painterly shading, a painted sky, mist and time-of-day grading. There are no model or image files to download.
+- **Three.js 3D world** (`src/world3d/`). The valley, trees, buildings, water, people and animals are all built in code, with soft painterly shading, a painted sky, mist and time-of-day grading. The world needs no downloaded models or textures; two small, locally served WebP title illustrations provide the opening art.
 - **Walking** uses a walkability grid with A* routing, so tap-to-walk finds its way around trees, walls and water.
 - **Procedural sound and music** (`src/audio/`). Wind, water, rain, birds, insects, bells, footsteps and calm ambient music are all generated with Web Audio.
 - **Saving.** Progress and settings go in `localStorage`; photographs go in IndexedDB.
@@ -50,3 +50,13 @@ If the repository has a different name, change `base` in `vite.config.js` to mat
 - [`docs/PLAYTEST.md`](docs/PLAYTEST.md): questions to answer after each playtest
 - [`docs/RESEARCH.md`](docs/RESEARCH.md): cultural and religious details to check
 - [`CREDITS.md`](CREDITS.md)
+
+## Iteration log
+
+### Plum Light — original art pass · November 3, 2026
+
+The opening now has original wide and portrait paintings beneath a flowering plum, with readable Begin/Continue controls and a still reduced-motion presentation. Outside the hut, branching blossom trees, finer grasses, low ground cover, fallen petals and worn stepping stones lead toward a hall that remains visible through softer blue-green mist. People have clearer human silhouettes; the hall, tea tables and hut darkroom have more everyday detail. Koi glide beneath calmer translucent water and appear in the viewfinder and saved photographs.
+
+**See and playtest:** [before/after, title screenshots, actual fish photograph and test evidence](docs/art-pass/README.md). Continue a saved stay or walk down to the hut, follow its path to the pond, and look down from the bank with the camera. Visit the hall entrance, tea terrace and darkroom corner for the smaller details.
+
+**Validation:** production build at `/the-quiet-path/`; Chromium desktop and emulated phone checks for Begin/Continue and v2 saves, exploration, touch controls, interactions, reduced motion and persisted fish photography. The [repeatable smoke script](scripts/art-pass-smoke.py) records exact results in [checks.json](docs/art-pass/checks.json). Physical phone performance still needs playtesting. Original art provenance is in [CREDITS.md](CREDITS.md); remaining refinements are in the [development log](docs/DEVLOG.md).

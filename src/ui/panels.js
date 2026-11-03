@@ -250,7 +250,7 @@ async function downloadSheet(day, items) {
 // --- title ----------------------------------------------------------------------
 
 export function titleScreen(root, { hasSave, onBegin, onContinue }) {
-  const el = h('div', { class: 'title-screen', role: 'dialog', 'aria-label': 'The Quiet Path' });
+  const el = h('div', { class: 'title-screen', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'The Quiet Path' });
   let sound = !settings.get('muted');
   const sOn = h('button', { 'aria-pressed': String(sound), onclick: () => setSound(true) }, '🔈 Sound on');
   const sOff = h('button', { 'aria-pressed': String(!sound), onclick: () => setSound(false) }, 'Silent');
@@ -262,18 +262,31 @@ export function titleScreen(root, { hasSave, onBegin, onContinue }) {
     sOff.classList.toggle('primary', !v);
   };
   setSound(sound);
-  const go = (fn) => { settings.set('muted', !sound); el.remove(); fn(); };
+  let release;
+  const go = (fn) => { settings.set('muted', !sound); release?.(); el.remove(); fn(); };
+  const art = `${import.meta.env.BASE_URL}art/`;
   el.append(
-    h('h1', {}, 'The Quiet Path'),
-    h('p', { class: 'sub' }, 'a small practice centre in a mountain valley'),
-    h('div', { class: 'actions' },
-      hasSave ? h('button', { class: 'primary', onclick: () => go(onContinue) }, 'Continue your stay') : null,
-      h('button', { class: hasSave ? '' : 'primary', onclick: () => go(onBegin) }, hasSave ? 'Begin a new stay' : 'Begin'),
-      h('div', { class: 'sound-choice', role: 'group', 'aria-label': 'Sound' }, sOn, sOff),
+    h('picture', { class: 'title-art', 'aria-hidden': 'true' },
+      h('source', { media: '(max-aspect-ratio: 4/5)', srcset: `${art}retreat-portrait.webp` }),
+      h('img', { src: `${art}retreat-wide.webp`, alt: '', fetchpriority: 'high', decoding: 'async' }),
     ),
-    h('p', { class: 'small' }, 'Tap the ground to walk there; drag to look around. Nothing here is timed; take as long as you like. Sound is part of the experience — headphones are lovely, but optional.'),
+    h('div', { class: 'title-content' },
+      h('div', { class: 'title-heading' },
+        h('p', { class: 'title-eyebrow' }, 'A place to pause'),
+        h('h1', {}, 'The Quiet Path'),
+        h('p', { class: 'sub' }, 'a small retreat in a mountain valley'),
+      ),
+      h('div', { class: 'title-controls' },
+        h('div', { class: 'actions' },
+          hasSave ? h('button', { class: 'primary', onclick: () => go(onContinue) }, 'Continue your stay') : null,
+          h('button', { class: hasSave ? '' : 'primary', onclick: () => go(onBegin) }, hasSave ? 'Begin a new stay' : 'Begin'),
+        ),
+        h('div', { class: 'sound-choice', role: 'group', 'aria-label': 'Sound' }, sOn, sOff),
+        h('p', { class: 'small' }, 'Walk slowly. Notice small things. Stay as long as you like.'),
+      ),
+    ),
   );
   root.append(el);
-  setTimeout(() => el.querySelector('button')?.focus(), 50);
+  release = trapFocus(el);
   return el;
 }

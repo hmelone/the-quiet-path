@@ -42,7 +42,42 @@ class Kit {
   }
 }
 
-/** Hip roof with gently upturned corners (Vietnamese temple feel). */
+// Small reusable details are baked into each building's mesh, keeping draw calls
+// low. Board edges, repairs and tea rings remain visible without image textures.
+function floorboards(k, w, d, y, cx = 0, cz = 0) {
+  const count = Math.ceil(w / 0.34), bw = w / count;
+  for (let i = 0; i < count; i++) {
+    const x = cx - w / 2 + (i + 0.5) * bw;
+    const col = ['#a67d56', '#95704e', '#af865f', '#9e7955'][i % 4];
+    k.box(bw - 0.012, 0.025, d, x, y, cz, col, { rough: 0.08 });
+    // Staggered end joints and fine grain marks; no raised collision edges.
+    const z = cz + ((i * 1.37) % Math.max(0.1, d - 0.4)) - (d - 0.4) / 2;
+    k.box(bw - 0.02, 0.003, 0.012, x, y + 0.026, z, '#6e553e');
+    if (i % 3 === 0) k.box(0.012, 0.003, Math.min(d * 0.65, 1.8), x + bw * 0.19, y + 0.026, cz, '#806246');
+  }
+}
+
+function shoes(k, x, y, z, col = '#5c5146') {
+  for (const side of [-1, 1]) {
+    k.geo(new THREE.SphereGeometry(0.12, 7, 5).scale(0.6, 0.45, 1.5).translate(x + side * 0.095, y + 0.055, z), col);
+    k.box(0.10, 0.02, 0.08, x + side * 0.095, y + 0.09, z - 0.025, '#292c28');
+  }
+}
+
+function teaSet(k, x, y, z) {
+  // A squat kettle, lid, arched handle and spout with several ordinary cups.
+  k.geo(new THREE.SphereGeometry(0.15, 12, 8).scale(1, 0.8, 1).translate(x, y + 0.12, z), '#536b66');
+  k.cyl(0.09, 0.07, 0.035, x, y + 0.235, z, '#3f534e', 10);
+  k.cyl(0.025, 0.025, 0.035, x, y + 0.27, z, '#7c6044', 7);
+  k.geo(new THREE.TorusGeometry(0.15, 0.018, 5, 12, Math.PI).translate(x, y + 0.20, z), '#64543e');
+  k.geo(new THREE.CylinderGeometry(0.035, 0.045, 0.19, 7).rotateZ(-0.85).translate(x + 0.18, y + 0.16, z), '#536b66');
+  for (const [dx, dz] of [[-0.32, 0.10], [0.31, 0.20], [0.20, -0.24]]) {
+    k.cyl(0.06, 0.065, 0.09, x + dx, y, z + dz, '#e2d2b4', 10);
+    k.cyl(0.051, 0.051, 0.002, x + dx, y + 0.091, z + dz, '#68583e', 10);
+  }
+}
+
+/** Hip roof with gently upturned corners (fictional retreat architecture). */
 function hipRoof(W, D, H, lift, col, seg = 10) {
   const pos = [];
   const rw = Math.max(0.2, (W - D) / 2);
@@ -257,6 +292,7 @@ function buildHall() {
   for (let i = 0; i < 2; i++) k.box(B.door.w + 1, F * (0.5 - i * 0.25) + 0.05, 0.5, 0, -0.2, D / 2 + 1.05 + i * 0.5, STONE);
   // floor
   k.box(W, 0.06, D, 0, F - 0.06, 0, WOOD_L);
+  floorboards(k, W - 0.15, D - 0.15, F);
   // walls: back, sides, front with a wide door opening; windows as glow strips
   const y0 = F;
   k.box(W, H, 0.22, 0, y0, -D / 2, PLASTER, { collide: true, noise: 0.1 });
@@ -272,6 +308,15 @@ function buildHall() {
   // open veranda posts in front
   for (const sx of [-W / 2, -W / 6, W / 6, W / 2]) k.box(0.25, H, 0.25, sx, y0, D / 2 + 1.4, WOOD);
   k.box(W + 0.4, 0.06, 1.5, 0, F - 0.06, D / 2 + 0.75, WOOD);
+  floorboards(k, W + 0.3, 1.45, F, 0, D / 2 + 0.75);
+  shoes(k, -3.3, F + 0.03, D / 2 + 0.9);
+  shoes(k, -3.8, F + 0.03, D / 2 + 1.0, '#8f7760');
+  shoes(k, 3.4, F + 0.03, D / 2 + 0.85, '#374a48');
+  // Front window frames give the hall a warm, inhabited face from the pond.
+  for (const x of [-4.9, 4.9]) {
+    k.box(1.8, 1.3, 0.06, x, F + 1.15, D / 2 + 0.13, WOOD_D);
+    for (const dx of [-0.4, 0, 0.4]) k.box(0.025, 1.1, 0.04, x + dx, F + 1.25, D / 2 + 0.20, WOOD);
+  }
   // roof
   k.geo((() => { const g = hipRoof(W + 3.8, D + 3.6, 2.8, 0.6, TILE, 14); g.translate(0, y0 + H + 0.15, 0.3); return g; })(), (x, y, z) => vary(C(TILE), 0.06, x, y, z));
   // ceiling (so the interior is enclosed)
@@ -284,6 +329,7 @@ function buildHall() {
 
   // windows (glow strips on the side walls)
   const winGeo = [];
+  for (const x of [-4.9, 4.9]) winGeo.push(new THREE.PlaneGeometry(1.6, 1.1).translate(x, F + 1.8, D / 2 + 0.17));
   for (const sx of [-1, 1]) for (const z of [-2.4, 0, 2.4]) {
     const w = new THREE.PlaneGeometry(1.6, 1.1);
     w.rotateY(sx * Math.PI / 2);
@@ -392,6 +438,11 @@ function buildTea() {
   k.box(W + 2, 0.12, 4, 0, -0.05, D / 2 + 2.2, '#b7ab93', { noise: 0.3 });
   for (const x of [-2.2, 2.0]) {
     k.box(1.2, 0.06, 0.8, x, 0.72, D / 2 + 2.3, WOOD_L, { collide: true });
+    floorboards(k, 1.2, 0.8, 0.78, x, D / 2 + 2.3);
+    // The pale edge is a worn repair, beside a tea-stained tabletop.
+    k.box(0.08, 0.006, 0.62, x - 0.48, 0.807, D / 2 + 2.3, '#bd956b');
+    k.geo(new THREE.TorusGeometry(0.09, 0.004, 3, 14).rotateX(Math.PI / 2).translate(x + 0.35, 0.81, D / 2 + 2.08), '#785b3d');
+    teaSet(k, x - 0.05, 0.813, D / 2 + 2.3);
     k.box(0.1, 0.72, 0.1, x - 0.5, 0, D / 2 + 2.0, WOOD_D).box(0.1, 0.72, 0.1, x + 0.5, 0, D / 2 + 2.6, WOOD_D);
     k.box(1.2, 0.06, 0.3, x, 0.42, D / 2 + 1.6, WOOD_L).box(1.2, 0.06, 0.3, x, 0.42, D / 2 + 3.0, WOOD_L);
   }
@@ -404,14 +455,6 @@ function buildTea() {
   const sign = board('A cup of tea, a quiet friend', 2.4, 0.42, { w: 700, h: 122, paper: '#d9c9a6' });
   sign.position.set(-1.6, 2.55, D / 2 + 0.06);
   g.add(sign);
-  // a teapot and cups on the first table
-  const tp = new THREE.Mesh(merge([
-    colorize(new THREE.SphereGeometry(0.12, 10, 8).scale(1, 0.8, 1).translate(0, 0.1, 0), '#6d4a3a'),
-    colorize(new THREE.CylinderGeometry(0.015, 0.02, 0.12, 5).rotateZ(1).translate(0.13, 0.12, 0), '#6d4a3a'),
-    ...[0, 1, 2].map((i) => colorize(new THREE.CylinderGeometry(0.04, 0.035, 0.06, 8).translate(0.3 + i * 0.12, 0.03, 0.15), '#e8e0d0')),
-  ]), paint({}));
-  tp.position.set(-2.2, 0.78, D / 2 + 2.3);
-  g.add(tp);
   const light = new THREE.PointLight(0xffc98a, 0, 10, 1.8);
   light.position.set(-1, 2.2, D / 2 + 1.5);
   g.add(light);
@@ -432,7 +475,8 @@ function buildHut() {
   const k = new Kit();
   const W = B.w, D = B.d, F = B.floor, H = 2.5;
   k.box(W + 0.6, F, D + 0.6, 0, -0.15, 0, STONE, { noise: 0.3 });
-  k.box(W, 0.05, D, 0, F - 0.05, 0, '#b9ad78'); // tatami-ish floor
+  k.box(W, 0.05, D, 0, F - 0.05, 0, WOOD_L);
+  floorboards(k, W - 0.1, D - 0.1, F);
   k.box(W, H, 0.15, 0, F, D / 2, WOOD_L, { collide: true });
   k.box(0.15, H, D, -W / 2, F, 0, WOOD_L, { collide: true });
   k.box(0.15, H, D, W / 2, F, 0, WOOD_L, { collide: true });
@@ -446,7 +490,35 @@ function buildHut() {
   // inside: futon, desk, darkroom curtain
   k.box(1.0, 0.18, 2.0, -W / 2 + 0.7, F, 0.6, '#d9d2c2').box(1.0, 0.08, 0.5, -W / 2 + 0.7, F + 0.18, 1.3, '#4a5a7a');
   k.box(1.1, 0.35, 0.6, W / 2 - 0.8, F, 1.2, WOOD_D);
-  k.box(0.05, 2.0, 1.2, W / 2 - 0.9, F, -0.9, '#2e2830');
+  // A partly drawn curtain lets the tiny working darkroom remain legible.
+  k.box(0.05, 1.85, 0.18, W / 2 - 1.35, F, -1.70, '#4b3b42');
+  // Personal everyday things: a folded quilt, notebook, cup and boots.
+  k.box(0.82, 0.06, 0.48, -W / 2 + 0.7, F + 0.26, 0.28, '#87958b');
+  k.box(0.25, 0.035, 0.32, W / 2 - 0.8, F + 0.35, 1.2, '#718d86', { rotY: 0.13 });
+  k.box(0.21, 0.008, 0.28, W / 2 - 0.8, F + 0.386, 1.2, '#d6ceb6', { rotY: 0.13 });
+  k.cyl(0.055, 0.06, 0.09, W / 2 - 1.1, F + 0.35, 1.15, '#d8c3a1', 10);
+  shoes(k, -0.7, F + 0.03, -D / 2 + 0.5);
+  // Bench with real equipment silhouettes: enlarger, trays, tongs and film.
+  const bx = W / 2 - 0.46;
+  k.box(0.72, 0.07, 1.45, bx, F + 0.73, -0.72, '#ae9781');
+  for (const z of [-1.3, -0.15]) k.box(0.06, 0.73, 0.06, bx + 0.22, F, z, WOOD_D);
+  k.box(0.42, 0.035, 0.42, bx - 0.05, F + 0.80, -1.1, '#373d3d');
+  k.box(0.045, 0.73, 0.055, bx + 0.20, F + 0.82, -1.24, '#505a56');
+  k.box(0.32, 0.24, 0.30, bx, F + 1.35, -1.14, '#343b3b');
+  k.cyl(0.065, 0.07, 0.12, bx, F + 1.23, -1.14, '#1e2625', 10);
+  k.box(0.28, 0.006, 0.32, bx - 0.05, F + 0.837, -1.1, '#d9cfb8');
+  for (const z of [-0.62, -0.20]) {
+    k.box(0.48, 0.05, 0.32, bx, F + 0.80, z, '#ded9c6');
+    k.box(0.42, 0.008, 0.26, bx, F + 0.85, z, '#84958d');
+  }
+  for (const dx of [-0.025, 0.025]) k.box(0.012, 0.018, 0.23, bx - 0.15 + dx, F + 0.87, -0.16, '#c7b47b', { rotY: dx * 7 });
+  k.box(0.65, 0.012, 0.012, bx, F + 1.96, -1.63, '#b7ad98');
+  for (let i = 0; i < 3; i++) {
+    const x = bx - 0.22 + i * 0.22;
+    k.box(0.13, 0.4 - i * 0.035, 0.008, x, F + 1.52 + i * 0.035, -1.63, '#593a2b');
+    for (let j = 0; j < 3; j++) k.box(0.09, 0.07, 0.01, x, F + 1.55 + j * 0.11, -1.62, j % 2 ? '#a58c62' : '#8b775a');
+    k.box(0.035, 0.06, 0.025, x, F + 1.93, -1.63, '#b3a181');
+  }
   const g = new THREE.Group();
   g.add(k.mesh());
   const win = colorize(new THREE.PlaneGeometry(0.8, 0.6).rotateY(Math.PI / 2).translate(W / 2 + 0.09, F + 1.4, -0.2), '#fff');
@@ -457,6 +529,9 @@ function buildHut() {
   const safelight = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), new THREE.MeshBasicMaterial({ color: 0xc0302a }));
   safelight.position.set(W / 2 - 0.9, F + 2.1, -0.9);
   g.add(safelight);
+  const safeGlow = new THREE.PointLight(0xff7252, 0.85, 3.2, 1.3);
+  safeGlow.position.set(W / 2 - 0.6, F + 1.8, -0.8);
+  g.add(safeGlow);
   const light = new THREE.PointLight(0xffc98a, 0, 7, 1.8);
   light.position.set(0, F + 1.9, 0.4);
   g.add(light);
@@ -567,7 +642,7 @@ export function buildAll() {
 export function updateGlow(built, atm, timeName) {
   const night = timeName === 'night' ? 1 : timeName === 'evening' ? 0.75 : timeName === 'dawn' ? 0.6 : 0;
   // by day, paper windows look like pale paper; by night they glow amber
-  const day = new THREE.Color('#9c9282'), lit = new THREE.Color('#f2a24a');
+  const day = new THREE.Color('#c3b18e'), lit = new THREE.Color('#f2a24a');
   glow.window.color.copy(day).lerp(lit, night);
   glow.lamp.color.copy(new THREE.Color('#b8ab90')).lerp(new THREE.Color('#ffb860'), night);
   for (const l of built.lights) l.intensity = night * 6 + 0.4;

@@ -466,8 +466,9 @@ class Game {
       things.push({ x: f.x, y: f.y + 1, z: f.z, label: roleLabel[p.role] || 'someone', r: 0.7 });
     }
     for (const a of this.world.animals.list) {
+      if (!a.obj.visible) continue;
       const o = a.obj.position;
-      things.push({ x: o.x, y: o.y + 0.5, z: o.z, label: a.label, r: a.kind === 'bird' ? 0.5 : a.kind === 'koi' || a.kind === 'squirrel' ? 0.25 : 0.7, range: a.kind === 'bird' ? 120 : 40 });
+      things.push({ x: o.x, y: o.y + (a.kind === 'koi' ? 0 : 0.5), z: o.z, label: a.label, r: a.kind === 'bird' ? 0.5 : a.kind === 'koi' ? 0.48 : a.kind === 'squirrel' ? 0.25 : 0.7, range: a.kind === 'bird' ? 120 : 40 });
     }
     return things;
   }
@@ -634,6 +635,9 @@ class Game {
   }
 
   frame(dt, rawDt = dt) {
+    // The opening is a still illustration. Avoid rendering the hidden 3D world
+    // behind it, especially on phones and for reduced-motion preferences.
+    if (this.mode === 'title') return;
     this.watchPerformance(rawDt);
     this.t += dt;
     const reduced = settings.reducedMotion;
@@ -647,10 +651,6 @@ class Game {
     const inp = this.input.step(dt);
     if (inp.dx || inp.dy) this.look(inp.dx, inp.dy);
     const canWalk = this.mode === 'explore';
-    if (this.mode === 'title') {
-      // a slow, gentle look across the valley behind the title
-      px.yaw += dt * (reduced ? 0 : 0.02);
-    }
     px.update(dt, { f: canWalk ? inp.f : 0, s: canWalk ? inp.s : 0, userLooking: this.input.dragging, autoTurn: settings.get('autoTurn'), reduced });
     eng.resize(innerWidth, innerHeight, Math.min(window.devicePixelRatio || 1, eng.tier.pixelRatio));
     px.applyTo(eng.camera);
