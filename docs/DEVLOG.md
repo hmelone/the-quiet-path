@@ -159,3 +159,30 @@ Respond to v1 playtesting: free walking in 3D, a Plum Village–style practice c
 - **A gentler valley.** The drop from the gate to the hall is about 6–7 m instead of about 15 m, and the terrain blends into the building terraces over a wider distance, with no steep ramps.
 - **A wooden footbridge over the stream**, exactly where the path and the morning walking-meditation loop cross it.
 - **Accessibility fix:** the hidden "Continue" button of the bell's breathing overlay is now fully removed from the page when not in use, so keyboard and screen-reader users don't land on it.
+
+---
+
+## v2.2: Quieter music, a livelier forest
+*Date: 2026-11-04*
+
+### Your playtest notes
+- "Begin a new stay" looped back to the title screen. (Fixed separately: the confirm box closed itself before recording your answer.)
+- A machine-like hum was still there.
+- The forest felt a bit empty; you asked for more animals, fun and relaxing.
+
+### What changed
+- **The hum was the music, not the nature sounds.** Measuring the spectrum of each layer showed the ambience had no tonal peaks, but the music's background chords held steady sine and triangle tones at about 97, 145 and 248 Hz for 20 seconds at a time, which reads as an electrical hum. The fix:
+  - The chords now sit only in the mid range (about 200 Hz and up).
+  - They use pure soft tones with a slow, slightly irregular waver, swell and fade, and leave gaps of silence.
+  - The music passes through a 170 Hz high-pass filter.
+  - The music's low-frequency energy dropped from about -81 dB to between -89 and -120 dB.
+- **More forest life:**
+  - **Deer:** small herds among the cedars, including a fawn, from dawn to evening.
+  - **Rabbits** by the path that hop about and bound away if you come close.
+  - **A fox** trotting a loop through the forest at dawn and dusk, stopping to look at you when you're near.
+  - **Small birds** pecking on the paths, fluttering up when you approach and settling back later.
+  - **Butterflies** drifting over meadows and clearings on fine days.
+  - **Squirrels** in the forest as well as the orchard.
+  - **An owl** on a branch at dusk and at night, slowly turning its head.
+  - **Forest sounds:** a woodpecker drumming by day, owl hoots at night.
+  - **You can look at** deer, the fox, rabbits and the owl: an icon follows them, and each has a short gentle description. They can also be named in photos.
