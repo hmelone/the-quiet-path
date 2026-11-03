@@ -186,3 +186,20 @@ Respond to v1 playtesting: free walking in 3D, a Plum Village–style practice c
   - **An owl** on a branch at dusk and at night, slowly turning its head.
   - **Forest sounds:** a woodpecker drumming by day, owl hoots at night.
   - **You can look at** deer, the fox, rabbits and the owl: an icon follows them, and each has a short gentle description. They can also be named in photos.
+
+---
+
+## v2.3: Develop any time; no more "boing"
+*Date: 2026-11-04*
+
+### Your playtest notes
+- You wanted to develop photos at any time, not only at night.
+- There were still occasional "boing" noises in the sound.
+
+### What changed
+- **Develop whenever you like:** the darkroom corner of your hut now works at any time of day.
+- **The "boing" sounds were quick pitch sweeps** in a few small sound effects. They're replaced with natural, unpitched textures:
+  - **Bubbles by the pond**, a rising "bloop" that played as often as every couple of seconds, are removed.
+  - **Frogs** were a falling triangle-wave tone. They're now a soft croak made of a rapid pulse of filtered noise, and less frequent.
+  - **Rain drips** were a falling whistle. They're now tiny filtered ticks.
+  - **The indoor wood creak** was a falling sawtooth tone. It's now a soft, short rasp of filtered noise.

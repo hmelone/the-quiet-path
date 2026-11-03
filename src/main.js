@@ -364,11 +364,6 @@ class Game {
       await this.dialog.say({ title: 'Darkroom corner', text: 'Behind the curtain: a small red lamp, trays, a line with clothes-pegs. There’s no exposed film waiting to be developed.' });
       return;
     }
-    const evening = game.s.time >= 3 || game.s.time === 0 || settings.get('instantReview');
-    if (!evening) {
-      await this.dialog.say({ title: 'Darkroom corner', text: 'Too much daylight leaks around the curtain just now. This evening, when the light has gone, the film can be developed.', note: 'You can choose to see photos right away in Settings.' });
-      return;
-    }
     const c = await this.dialog.say({ title: 'Darkroom corner', text: `You have ${waiting.length} exposed ${waiting.length === 1 ? 'frame' : 'frames'}. The trays are ready.`, choices: [{ id: 'dev', label: 'Develop the film' }, { id: 'no', label: 'Not now' }] });
     if (c !== 'dev') return;
     this.devOverlay.classList.add('on');
