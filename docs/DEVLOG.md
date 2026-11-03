@@ -130,3 +130,32 @@ Respond to v1 playtesting: free walking in 3D, a Plum Village–style practice c
 
 ### Playtest notes
 *(Add your notes here after playing v2. See `PLAYTEST.md`.)*
+
+---
+
+## v2.1: Fixes from v2 playtesting
+*Date: 2026-11-04*
+
+### Your playtest notes (v2)
+- Clicking things to read them made the view awkward: you walked to the object and often ended up behind it. Viewing shouldn't require moving.
+- Too much wind: nonstop, like a storm, with a machine-like noise behind it that didn't sound natural.
+- The hill down to the meditation hall was very steep and hard to walk down.
+- The walking-meditation path should have a small bridge or stones over the stream.
+- Walking was hard: after clicking, the character kept walking and couldn't be stopped. Clicking should just walk there, and if you choose a destination you should be able to press Esc to stop, with that shown on screen.
+
+### What changed
+- **Viewing happens in place.** Tapping 👁 look, 💬 talk or 🔔 bell opens the text right where you are, with no walking and no camera movement. Only sitting walks you to the seat, and signposts or doors still walk you there.
+- **Walking you can control:**
+  - Tapping the ground walks you to that spot only, never more than about 35 m.
+  - While walking, a **"Walking to …" banner with a Stop button** appears at the top, with the hint "or press Esc".
+  - **Esc stops walking** (it opens the menu only when you're standing still).
+  - Tapping right at your feet also stops you.
+- **The "machine" noise was a looping seam.** The wind and room-tone sounds looped a 4-second noise recording whose ends didn't match, giving a soft mechanical thump every 4–8 seconds. The fix:
+  - The noise is now 12 seconds long, has its drift (DC) removed, and crossfades into itself, so the loop is seamless.
+  - The narrow whistling "trickle" layer near the pond and the low room rumble are replaced with soft broadband sound.
+- **Calmer wind:**
+  - The wind is about a third as loud as before.
+  - Gusts are rare (roughly every 15–20 seconds at most), gentle, and fade back to calm.
+- **A gentler valley.** The drop from the gate to the hall is about 6–7 m instead of about 15 m, and the terrain blends into the building terraces over a wider distance, with no steep ramps.
+- **A wooden footbridge over the stream**, exactly where the path and the morning walking-meditation loop cross it.
+- **Accessibility fix:** the hidden "Continue" button of the bell's breathing overlay is now fully removed from the page when not in use, so keyboard and screen-reader users don't land on it.

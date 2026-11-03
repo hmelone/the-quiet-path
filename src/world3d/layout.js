@@ -39,7 +39,10 @@ export function pondDist(x, z) {
 export const STREAM = [[-30, -60], [-26, -48], [-22, -34], [-20, -20], [-14, -8], [-6, 2], [0, 7]];
 
 /** Bridge across the pond (wooden, walkable). */
-export const BRIDGE = { x0: -4.5, z0: 9, x1: 16.5, z1: 15, width: 1.8 };
+export const BRIDGE = { x0: -4.5, z0: 9, x1: 16.5, z1: 15, width: 1.8, arch: 0.9 };
+
+/** Small footbridge where the path and the walking-meditation loop cross the stream. */
+export const FOOTBRIDGE = { x0: -2.6, z0: 1.4, x1: -6.0, z1: 5.4, width: 2.0, arch: 0.25 };
 
 /** Rectangular building footprints. doors are openings in the walls (walkable). */
 export const BUILDINGS = {

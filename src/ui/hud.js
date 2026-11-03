@@ -15,6 +15,9 @@ export class Hud {
     this.cameraBtn = h('button', { class: 'icon-btn big', 'aria-label': 'Raise camera (C)', onclick: () => handlers.camera() }, icon('camera'));
     this.soundBtn = h('button', { class: 'icon-btn', onclick: () => handlers.sound() });
     this.nearby = h('div', { class: 'nearby', role: 'group', 'aria-label': 'Nearby' });
+    this.walkText = h('span');
+    this.walkBar = h('div', { class: 'walking', hidden: true, role: 'status' },
+      this.walkText, h('button', { onclick: () => handlers.stop() }, 'Stop'), h('span', { class: 'walk-hint' }, 'or press Esc'));
     this.el.append(
       this.label,
       h('div', { class: 'hud-buttons hud-tl' },
@@ -24,6 +27,7 @@ export class Hud {
       ),
       h('div', { class: 'hud-buttons hud-br' }, this.cameraBtn),
       this.nearby,
+      this.walkBar,
     );
     this.whispers = h('div', { class: 'whispers', 'aria-hidden': 'true' });
     this.captions = h('div', { class: 'captions', 'aria-hidden': 'true' });
@@ -87,6 +91,14 @@ export class Hud {
       el.classList.toggle('nearest', nearest && nearest.id === it.id);
     }
     for (const [id, el] of this.icons) if (!seen.has(id)) { el.remove(); this.icons.delete(id); }
+  }
+
+  /** Show "Walking to …" with a Stop button while walking somewhere. */
+  setWalking(name) {
+    if (name === this._walking) return;
+    this._walking = name;
+    this.walkBar.hidden = !name;
+    if (name) this.walkText.textContent = name === 'there' ? 'Walking…' : `Walking to ${name}…`;
   }
 
   /** Accessible list of nearby things as real buttons. */

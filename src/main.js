@@ -78,13 +78,14 @@ class Game {
       menu: () => this.openMenu(),
       sound: () => { audio.init(); settings.set('muted', !settings.get('muted')); this.startMusic(); },
       use: (it) => this.use(it),
+      stop: () => this.stopWalking(),
     });
     this.dialog = new Dialog(this.ui);
     this.vf = new Viewfinder(this.ui, { shutter: () => this.shutter(), close: () => this.toggleCamera(false), focusChanged: () => {} });
     this.sitting = new Sitting(this.ui, { dialog: this.dialog, whisper: (t, ms) => this.hud.whisper(t, ms), audio });
     this.flash = h('div', { class: 'flash' });
     this.devOverlay = h('div', { class: 'develop-overlay' });
-    this.breath = h('div', { class: 'breath-pause', 'aria-live': 'polite' }, h('div', { class: 'ring', 'aria-hidden': 'true' }), h('p'), h('button', { onclick: () => this.endBreath() }, 'Continue'));
+    this.breath = h('div', { class: 'breath-pause', 'aria-live': 'polite', hidden: true }, h('div', { class: 'ring', 'aria-hidden': 'true' }), h('p'), h('button', { onclick: () => this.endBreath() }, 'Continue'));
     this.marker = this.makeMarker();
     this.ui.append(this.flash, this.devOverlay, this.breath);
     audio.onCaption = (t) => this.hud.caption(t);
@@ -206,36 +207,39 @@ class Game {
     }
   }
 
-  /** Approach an interactable: walk to it, face it, then act. */
+  /**
+   * Use an interactable. Looking, talking and bells open right where you are —
+   * no walking needed. Signposts and doors walk you there; sitting walks you to the seat.
+   */
   use(it) {
     if (this.mode !== 'explore' || this.dialog.open) return;
     audio.init();
     if (it.kind === 'go') {
-      const ok = this.player.walkTo(it.to[0], it.to[1], null, it.faceTo);
-      if (ok) {
-        this.hud.whisper(`Walking to ${it.toName}…`, 2500);
+      if (this.player.walkTo(it.to[0], it.to[1], null, it.faceTo)) {
+        this.walkingTo = it.toName;
         this.showMarker(it.to[0], it.to[1]);
       }
       return;
     }
-    const pos = this.itemPos(it);
-    let stand = it.stand;
-    if (it.dynamic) {
-      const dx = this.player.x - pos.x, dz = this.player.z - pos.z, d = Math.hypot(dx, dz) || 1;
-      stand = [pos.x + (dx / d) * 2.4, pos.z + (dz / d) * 2.4];
+    if (it.kind === 'sit' && it.stand && Math.hypot(it.stand[0] - this.player.x, it.stand[1] - this.player.z) > 1.2) {
+      const ok = this.player.walkTo(it.stand[0], it.stand[1], () => { this.walkingTo = null; this.runScript(it.script); });
+      if (ok) { this.walkingTo = it.label.toLowerCase(); return; }
     }
-    const act = () => {
-      this.player.lookTarget = Math.atan2(-(pos.x - this.player.x), -(pos.z - this.player.z));
-      if (it.dynamic) {
-        // the person turns to face you
-        const f = it.dynamic();
-        if (f) f.rotation.y = Math.atan2(-(this.player.x - f.position.x), -(this.player.z - f.position.z));
-        this.player.pitch = -0.06;
-      }
-      setTimeout(() => this.runScript(it.script), 350);
-    };
-    if (!stand || Math.hypot(stand[0] - this.player.x, stand[1] - this.player.z) < 1.2) act();
-    else if (!this.player.walkTo(stand[0], stand[1], act)) act();
+    this.player.stop();
+    this.walkingTo = null;
+    if (it.dynamic) {
+      // the person turns to face you
+      const f = it.dynamic();
+      if (f) f.rotation.y = Math.atan2(-(this.player.x - f.position.x), -(this.player.z - f.position.z));
+    }
+    this.runScript(it.script);
+  }
+
+  /** Stop walking (Esc or the Stop button). */
+  stopWalking() {
+    this.player.stop();
+    this.walkingTo = null;
+    this.marker.material.opacity = 0;
   }
 
   itemPos(it) {
@@ -273,7 +277,8 @@ class Game {
       if (this.vf.active) this.toggleCamera(false);
       this.mode = 'breath';
       this.hud.show(false);
-      this.breath.classList.add('on');
+      this.breath.hidden = false;
+      requestAnimationFrame(() => this.breath.classList.add('on'));
       const p = this.breath.querySelector('p');
       const lines = ['Everyone in the valley stops where they are.', 'Breathing in…', 'Breathing out…', 'Breathing in…', 'Breathing out…', 'Breathing in…', 'Breathing out…'];
       let i = 0;
@@ -298,6 +303,7 @@ class Game {
     this.breathTarget = 0;
     audio.setDuck(1);
     this.breath.classList.remove('on');
+    setTimeout(() => { if (!this.breath.classList.contains('on')) this.breath.hidden = true; }, 1600);
     if (this.mode === 'breath') {
       this.mode = 'explore';
       this.hud.show(true);
@@ -395,8 +401,13 @@ class Game {
     const hit = this.raycastScreen(x, y);
     if (!hit) return;
     const p = hit.point;
-    if (Math.hypot(p.x - this.player.x, p.z - this.player.z) < 0.6) return;
-    if (this.player.walkTo(p.x, p.z)) this.showMarker(p.x, p.z);
+    let tx = p.x, tz = p.z;
+    const d = Math.hypot(tx - this.player.x, tz - this.player.z);
+    if (d < 0.6) { this.stopWalking(); return; }
+    // tapping walks you to that spot only — never further than a short stroll
+    const MAX = 35;
+    if (d > MAX) { tx = this.player.x + ((tx - this.player.x) / d) * MAX; tz = this.player.z + ((tz - this.player.z) / d) * MAX; }
+    if (this.player.walkTo(tx, tz)) { this.walkingTo = 'there'; this.showMarker(tx, tz); }
   }
 
   raycastScreen(x, y) {
@@ -571,6 +582,7 @@ class Game {
       return;
     }
     if (this.mode !== 'explore') return;
+    if (k === 'escape' && this.player.route) { this.stopWalking(); return; }
     if (k === 'c') this.toggleCamera(true);
     else if (k === 'escape') this.openMenu();
     else if (k === 'p') this.openAlbum();
@@ -700,6 +712,11 @@ class Game {
     // save position now and then
     this._acc.save += dt;
     if (this._acc.save > 3 && this.mode === 'explore') { this._acc.save = 0; this.savePos(); }
+
+    // the "walking…" banner with a Stop button
+    const walking = !!px.route && this.mode === 'explore';
+    if (!walking && this.walkingTo) this.walkingTo = null;
+    this.hud.setWalking(walking ? this.walkingTo || 'there' : null);
 
     eng.render();
     if (this.mode === 'explore') this.layoutIcons();

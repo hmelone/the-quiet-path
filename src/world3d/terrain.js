@@ -2,7 +2,7 @@
 // a carved pond and stream, and painted path surfaces.
 import * as THREE from 'three';
 import { fbm2, noise2, smoothstep, clamp, lerp } from '../core/rng.js';
-import { BOUNDS, PADS, PATHS, POND, pondDist, STREAM, BRIDGE, BUILDINGS, WATER_Y } from './layout.js';
+import { BOUNDS, PADS, PATHS, POND, pondDist, STREAM, BRIDGE, FOOTBRIDGE, BUILDINGS, WATER_Y } from './layout.js';
 
 /** Distance from point to a polyline; returns { d, t } (t = 0..1 along segment set). */
 export function polyDist(pts, x, z) {
@@ -20,7 +20,8 @@ export function polyDist(pts, x, z) {
 }
 
 function baseHeight(x, z) {
-  let h = 18 * (1 - smoothstep(-72, 12, z));
+  // a gentle valley: about 10 m from the gate down to the pond
+  let h = 10 * (1 - smoothstep(-84, 24, z));
   const s = Math.max(0, Math.abs(x) - 28);
   h += s * s * 0.011 + s * 0.12;
   const n = Math.max(0, -80 - z);
@@ -41,7 +42,7 @@ export function heightAt(x, z) {
   let h = baseHeight(x, z);
   for (const p of Object.values(PADS)) {
     const d = Math.hypot(x - p.x, z - p.z);
-    const k = 1 - smoothstep(p.r, p.r + 7, d);
+    const k = 1 - smoothstep(p.r, p.r + 16, d);
     if (k > 0) h = lerp(h, p.h, k);
   }
   // pond basin
@@ -57,20 +58,31 @@ export function heightAt(x, z) {
   return h;
 }
 
-/** Is (x,z) on the bridge deck? */
-export function onBridge(x, z) {
-  const { x0, z0, x1, z1, width } = BRIDGE;
+function onSpan(B, x, z) {
+  const { x0, z0, x1, z1, width } = B;
   const vx = x1 - x0, vz = z1 - z0, l2 = vx * vx + vz * vz;
   const t = ((x - x0) * vx + (z - z0) * vz) / l2;
-  if (t < -0.02 || t > 1.02) return false;
+  if (t < -0.02 || t > 1.02) return null;
   const px = x0 + vx * t, pz = z0 + vz * t;
-  return Math.hypot(x - px, z - pz) < width / 2;
+  return Math.hypot(x - px, z - pz) < width / 2 ? clamp(t) : null;
 }
+
+/** Is (x,z) on a bridge deck (pond bridge or stream footbridge)? */
+export function onBridge(x, z) {
+  return onSpan(BRIDGE, x, z) != null || onSpan(FOOTBRIDGE, x, z) != null;
+}
+
+let footBase = null;
 export function bridgeHeight(x, z) {
+  const tf = onSpan(FOOTBRIDGE, x, z);
+  if (tf != null) {
+    if (footBase == null) footBase = Math.max(heightAt(FOOTBRIDGE.x0, FOOTBRIDGE.z0), heightAt(FOOTBRIDGE.x1, FOOTBRIDGE.z1)) + 0.12;
+    return footBase + Math.sin(tf * Math.PI) * FOOTBRIDGE.arch;
+  }
   const { x0, z0, x1, z1 } = BRIDGE;
   const vx = x1 - x0, vz = z1 - z0, l2 = vx * vx + vz * vz;
   const t = clamp(((x - x0) * vx + (z - z0) * vz) / l2);
-  return WATER_Y + 0.55 + Math.sin(t * Math.PI) * 0.9;
+  return WATER_Y + 0.55 + Math.sin(t * Math.PI) * BRIDGE.arch;
 }
 
 /** Local coordinates inside a building footprint (or null if outside). */
