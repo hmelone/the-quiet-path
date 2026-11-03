@@ -25,7 +25,7 @@ export const DEFAULTS = {
   lookSensitivity: 1,
   invertLook: false,
   momentum: true,
-  instantReview: false, // develop photos immediately instead of each evening
+  instantReview: false, // develop photos immediately instead of in the darkroom
   breathGuide: false,
 };
 
