@@ -104,8 +104,9 @@ export function confirmBox(root, title, text, yes, no = 'Cancel') {
   return new Promise((resolve) => {
     let p;
     const body = h('div', {}, h('p', {}, text), h('div', { class: 'btn-row' },
-      h('button', { onclick: () => { p.close(); resolve(false); } }, no),
-      h('button', { class: 'primary', onclick: () => { p.close(); resolve(true); } }, yes)));
+      // answer first, then close (closing on its own means "cancel")
+      h('button', { onclick: () => { resolve(false); p.close(); } }, no),
+      h('button', { class: 'primary', onclick: () => { resolve(true); p.close(); } }, yes)));
     p = panel(root, title, body, { onClose: () => resolve(false) });
   });
 }
