@@ -302,3 +302,32 @@ Fixed during testing:
 
 ### Not yet tested
 Real phones; how the writing lands for a first-time player; whether *Now and then* feels right over a longer session.
+
+---
+
+## v2.6: More natural people and wildlife
+*Date: November 3, 2026 · follows the merged Plum Light art pass (`77992e1`)*
+
+### Playtest feedback
+
+The round facial attachments looked odd, and people and animals still read as collections of simple shapes.
+
+### Changes
+
+Replaced the human head attachments with a continuous sculpted head: chin, jaw, cheekbones, brow and nasal profile are part of its surface; ear outlines and facial features use subtle geometry/vertex shading. Shaped shoulders, waist, hips, hands and feet into more natural proportions, softened the sleeve/torso joins, and added cloth folds. Meditation, tea-bench and reading poses now have different limbs. Corrected the mismatch between modeled facing and walking direction, and gave standing figures a small alternating leg movement.
+
+Rebuilt deer, fox, rabbit, heron, cat, squirrel, owl, small birds and koi with original anatomical cross-section meshes. Muzzles, haunches, shoulders, hocks, hooves/paws, ears and fins are shaped for their species; eyes are flush patches rather than spherical beads. Deer graze by bending a connected neck; deer/fox leg motion stays in merged meshes and follows their travel/bell slowdown. The owl's branch remains still. Existing routines, labels, interactions, save format and fish-photography path remain intact. Wildlife time/weather rebuilds release their retired model resources.
+
+### Review and validation
+
+See [the comparison gallery](characters/README.md) for front faces, figure poses, all rebuilt species, and people at walking distance on desktop and an emulated phone. Models use the existing painterly material; they are more anatomically shaped while retaining the game's stylized presentation. There are no external model/texture downloads or new application dependencies.
+
+The repeatable model checks cover geometry/transforms, proportions and draw budgets, daily routines, wildlife rebuilds and fish bounds; the production browser checks cover the full existing exploration/save/touch/photography workflow. Detailed results are recorded after the final checks below.
+
+Final results: production build passes (44 modules; JS approximately 206.65 KB gzip), all 14 new model checks and all 23 production browser checks pass, and the existing forest-audio check still passes. No JavaScript errors were observed. Existing v2 progress and film roll, navigation, touch camera/Stop, interactions, reduced-motion title and fish JPEG persistence/album all passed. [Recorded browser checks](characters/checks.json) and a [saved fish photograph](characters/fish-in-game.jpg) are included.
+
+### Integration with passing thoughts
+
+Retained the newer `main` passing-thought stream, settings, reader interaction and camera-hiding behavior while keeping the refined human/wildlife models. The passing-thoughts log remains v2.5; the character refinement is v2.6.
+
+Post-merge validation: production build, all 14 model checks, all 23 production browser checks and the existing forest-audio check pass. A focused browser check also confirmed that the refined reader is recognized by the thought feature, lingering creates the bench interaction, and raising the camera hides the thought. No JavaScript errors were observed. Original comparison captures were preserved.
