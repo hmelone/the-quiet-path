@@ -251,19 +251,21 @@ async function downloadSheet(day, items) {
 
 // --- title ----------------------------------------------------------------------
 
-export function titleScreen(root, { hasSave, onBegin, onContinue }) {
+export function titleScreen(root, { hasSave, onBegin, onContinue, onSound }) {
   const el = h('div', { class: 'title-screen', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'The Quiet Path' });
   let sound = !settings.get('muted');
   const sOn = h('button', { 'aria-pressed': String(sound), onclick: () => setSound(true) }, '🔈 Sound on');
   const sOff = h('button', { 'aria-pressed': String(!sound), onclick: () => setSound(false) }, 'Silent');
-  const setSound = (v) => {
+  const setSound = (v, apply = true) => {
     sound = v;
+    // takes effect right away, so the title music starts or stops with the choice
+    if (apply) { settings.set('muted', !v); onSound?.(v); }
     sOn.setAttribute('aria-pressed', String(v));
     sOff.setAttribute('aria-pressed', String(!v));
     sOn.classList.toggle('primary', v);
     sOff.classList.toggle('primary', !v);
   };
-  setSound(sound);
+  setSound(sound, false);
   let release;
   const go = (fn) => { settings.set('muted', !sound); release?.(); el.remove(); fn(); };
   const art = `${import.meta.env.BASE_URL}art/`;
@@ -284,6 +286,7 @@ export function titleScreen(root, { hasSave, onBegin, onContinue }) {
           h('button', { class: hasSave ? '' : 'primary', onclick: () => go(onBegin) }, hasSave ? 'Begin a new stay' : 'Begin'),
         ),
         h('div', { class: 'sound-choice', role: 'group', 'aria-label': 'Sound' }, sOn, sOff),
+        h('p', { class: 'small title-sound-hint', hidden: true, 'aria-live': 'polite' }, 'Tap anywhere for sound'),
         h('p', { class: 'small' }, 'Walk slowly. Notice small things. Stay as long as you like.'),
       ),
     ),

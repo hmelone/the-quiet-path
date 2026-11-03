@@ -118,7 +118,42 @@ class Game {
   }
 
   showTitle() {
-    titleScreen(this.ui, { hasSave: game.hasSave, onBegin: () => this.begin(true), onContinue: () => this.begin(false) });
+    const el = titleScreen(this.ui, {
+      hasSave: game.hasSave, onBegin: () => this.begin(true), onContinue: () => this.begin(false),
+      onSound: (on) => { if (on) { audio.init(); this.startMusic(); } this.updateTitleHint(); },
+    });
+    this.titleEl = el;
+    this.titleMusic();
+  }
+
+  /**
+   * Play the music on the title screen. Browsers only allow sound after the
+   * person has tapped, clicked or pressed a key, so if it's held back we start
+   * on the very first interaction and show a small "Tap anywhere for sound" note.
+   */
+  titleMusic() {
+    if (settings.get('muted')) { this.updateTitleHint(); return; }
+    audio.init();
+    this.startMusic();
+    if (!this._unlockBound) {
+      this._unlockBound = true;
+      const unlock = () => {
+        if (!settings.get('muted')) { audio.init(); this.startMusic(); }
+        if (audio.ctx?.state === 'running') {
+          for (const ev of ['pointerdown', 'keydown', 'touchend']) window.removeEventListener(ev, unlock, true);
+        }
+        setTimeout(() => this.updateTitleHint(), 100);
+      };
+      for (const ev of ['pointerdown', 'keydown', 'touchend']) window.addEventListener(ev, unlock, true);
+    }
+    // the context may still be waiting for permission
+    setTimeout(() => this.updateTitleHint(), 300);
+  }
+
+  updateTitleHint() {
+    const hint = this.titleEl?.querySelector('.title-sound-hint');
+    if (!hint) return;
+    hint.hidden = settings.get('muted') || audio.ctx?.state === 'running';
   }
 
   applyDocSettings() {
