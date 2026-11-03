@@ -4,18 +4,32 @@ import { settings } from '../core/settings.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 
-function noiseBuffer(ctx, type, seconds = 4) {
-  const len = ctx.sampleRate * seconds;
-  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-  const d = buf.getChannelData(0);
-  let last = 0, b0 = 0, b1 = 0, b2 = 0;
-  for (let i = 0; i < len; i++) {
+/**
+ * Noise that loops seamlessly: generated a little long, DC-free, and with the
+ * tail crossfaded into the head, so there is no periodic click or thump.
+ */
+function noiseBuffer(ctx, type, seconds = 12) {
+  const fade = Math.floor(ctx.sampleRate * 1.5);
+  const len = Math.floor(ctx.sampleRate * seconds);
+  const raw = new Float32Array(len + fade);
+  let last = 0, b0 = 0, b1 = 0, b2 = 0, mean = 0;
+  for (let i = 0; i < raw.length; i++) {
     const w = Math.random() * 2 - 1;
-    if (type === 'brown') { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; }
+    let v;
+    if (type === 'brown') { last = (last + 0.02 * w) / 1.02; v = last * 3.5; }
     else if (type === 'pink') {
       b0 = 0.99765 * b0 + w * 0.099; b1 = 0.963 * b1 + w * 0.2965; b2 = 0.57 * b2 + w * 1.0526;
-      d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.12;
-    } else d[i] = w * 0.5;
+      v = (b0 + b1 + b2 + w * 0.1848) * 0.12;
+    } else v = w * 0.5;
+    mean = mean * 0.9995 + v * 0.0005; // slow DC removal
+    raw[i] = v - mean;
+  }
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = raw[i];
+  for (let i = 0; i < fade; i++) {
+    const k = i / fade;
+    d[i] = raw[i] * Math.sqrt(k) + raw[len + i] * Math.sqrt(1 - k);
   }
   return buf;
 }
@@ -83,7 +97,6 @@ class AudioEngine {
     s.buffer = buf;
     s.loop = true;
     s.playbackRate.value = rate;
-    s.loopStart = Math.random() * 2;
     s.start(0, Math.random() * 3);
     return s;
   }
@@ -103,14 +116,15 @@ class AudioEngine {
     const bp = (f, q) => { const b = c.createBiquadFilter(); b.type = 'bandpass'; b.frequency.value = f; b.Q.value = q; return b; };
     const lp = (f) => { const b = c.createBiquadFilter(); b.type = 'lowpass'; b.frequency.value = f; return b; };
     const hp = (f) => { const b = c.createBiquadFilter(); b.type = 'highpass'; b.frequency.value = f; return b; };
-    this._bed('wind', this._loop(this.noise.brown), [lp(500)]);
-    this._bed('leaves', this._loop(this.noise.pink), [bp(3200, 0.6)]);
+    this.windLp = lp(380);
+    this._bed('wind', this._loop(this.noise.brown), [hp(40), this.windLp]);
+    this._bed('leaves', this._loop(this.noise.pink), [bp(2600, 0.45)]);
     this.streamPan = c.createStereoPanner ? c.createStereoPanner() : c.createGain();
     this._bed('stream', this._loop(this.noise.white, 0.9), [bp(800, 0.8), lp(2500), this.streamPan]);
-    this._bed('trickle', this._loop(this.noise.white), [bp(2400, 3.5)]);
+    this._bed('trickle', this._loop(this.noise.pink), [bp(1800, 0.9)]);
     this.rainLp = lp(7000);
     this._bed('rain', this._loop(this.noise.white, 0.8), [hp(700), this.rainLp]);
-    this._bed('room', this._loop(this.noise.brown, 0.5), [lp(220)]);
+    this._bed('room', this._loop(this.noise.pink, 0.7), [hp(60), lp(400)]);
   }
 
   /** Set the sound profile for a place, crossfading over a couple of seconds. */
@@ -130,12 +144,12 @@ class AudioEngine {
     const p = this.profile, e = this.env, t = this.ctx.currentTime;
     const muffled = p.muffled ? 1 : 0;
     const target = {
-      wind: (p.wind ?? 0.3) * (0.25 + e.wind * 0.5) * 0.5,
-      leaves: (p.leaves ?? 0.3) * (0.15 + e.wind * 0.35) * 0.35,
-      stream: (p.stream ?? 0) * 0.22,
-      trickle: (p.trickle ?? 0) * 0.12,
-      rain: e.rain * (muffled ? 0.25 : 0.32),
-      room: (p.room ?? 0) * 0.25,
+      wind: (p.wind ?? 0.3) * (0.2 + e.wind * 0.3) * 0.16,
+      leaves: (p.leaves ?? 0.3) * (0.1 + e.wind * 0.2) * 0.18,
+      stream: (p.stream ?? 0) * 0.2,
+      trickle: (p.trickle ?? 0) * 0.05,
+      rain: e.rain * (muffled ? 0.22 : 0.3),
+      room: (p.room ?? 0) * 0.03,
     };
     for (const k in target) this.beds[k]?.gain.gain.setTargetAtTime(target[k], t, tc);
     this.rainLp.frequency.setTargetAtTime(muffled ? 900 : 7000, t, 0.5);
@@ -146,14 +160,20 @@ class AudioEngine {
     const p = this.profile, e = this.env;
     const t = this.ctx.currentTime;
     // gusts
-    if (Math.random() < 0.06) {
+    // an occasional gentle breeze, then calm again (not a storm)
+    if (Math.random() < 0.012 && !this._gusting) {
+      this._gusting = true;
       const g = this.beds.wind.gain.gain, l = this.beds.leaves.gain.gain;
-      const base = (p.wind ?? 0.3) * (0.25 + e.wind * 0.5) * 0.5;
-      g.setTargetAtTime(base * rand(1.3, 2.2), t, 0.8);
-      g.setTargetAtTime(base, t + rand(1.5, 3), 1.2);
-      const lb = (p.leaves ?? 0.3) * (0.15 + e.wind * 0.35) * 0.35;
-      l.setTargetAtTime(lb * rand(1.4, 2.4), t + 0.3, 0.6);
-      l.setTargetAtTime(lb, t + rand(2, 3.5), 1);
+      const base = (p.wind ?? 0.3) * (0.2 + e.wind * 0.3) * 0.16;
+      const lb = (p.leaves ?? 0.3) * (0.1 + e.wind * 0.2) * 0.18;
+      const k = rand(1.25, 1.7), dur = rand(3, 6);
+      g.setTargetAtTime(base * k, t, 1.6);
+      l.setTargetAtTime(lb * k, t + 0.4, 1.4);
+      this.windLp.frequency.setTargetAtTime(520, t, 2);
+      g.setTargetAtTime(base, t + dur, 2.5);
+      l.setTargetAtTime(lb, t + dur, 2.2);
+      this.windLp.frequency.setTargetAtTime(380, t + dur, 3);
+      setTimeout(() => { this._gusting = false; }, (dur + 6) * 1000);
     }
     const birdRate = (p.birds ?? 0) * e.daylight * (1 - e.rain * 0.8) * (p.muffled ? 0.4 : 1);
     if (Math.random() < birdRate * 0.07) this._bird(p.muffled ? 0.3 : 1);

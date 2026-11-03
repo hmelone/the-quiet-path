@@ -151,6 +151,7 @@ button.primary { background: var(--accent); color: var(--accent-ink); border-col
   opacity: 0; transition: opacity 1.5s;
 }
 .breath-pause.on { opacity: 1; }
+.breath-pause[hidden] { display: none; }
 .breath-pause .ring { width: 110px; height: 110px; border-radius: 50%; border: 1.5px solid rgba(255,250,235,0.6); animation: breath 10s ease-in-out infinite; }
 html[data-motion='reduced'] .breath-pause .ring { animation: none; opacity: 0.5; }
 .breath-pause p { font-family: var(--serif); font-style: italic; font-size: 1.35em; margin: 0; text-shadow: 0 1px 10px #000; transition: opacity 1.2s; }
@@ -167,7 +168,7 @@ html[data-motion='reduced'] .breath-pause .ring { animation: none; opacity: 0.5;
 
 /* whispers & captions */
 .whispers {
-  position: fixed; top: calc(72px + var(--safe-t)); left: 50%; transform: translateX(-50%);
+  position: fixed; top: calc(122px + var(--safe-t)); left: 50%; transform: translateX(-50%);
   width: min(620px, calc(100% - 32px)); text-align: center; pointer-events: none !important;
 }
 .whisper {
@@ -335,3 +336,14 @@ html[data-motion='reduced'] .sit-layer .breath { animation: none; opacity: 0.4; 
   .vf-controls { gap: 10px; }
   .vf-controls .zoom input { width: 80px; }
 }
+
+/* walking banner */
+.walking {
+  position: absolute; top: calc(70px + var(--safe-t)); left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px; padding: 4px 6px 4px 16px; border-radius: 999px;
+  background: rgba(24, 28, 26, 0.7); backdrop-filter: blur(6px); white-space: nowrap; font-size: 0.95em;
+}
+.walking[hidden] { display: none; }
+.walking button { min-height: 40px; padding: 0.3em 1em; background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.walking .walk-hint { font-size: 0.8em; opacity: 0.75; padding-right: 10px; }
+@media (hover: none) { .walking .walk-hint { display: none; } }

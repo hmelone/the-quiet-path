@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { colorize, merge, vary } from './geo.js';
 import { paint } from './materials.js';
-import { PADS, BUILDINGS, BRIDGE, WATER_Y } from './layout.js';
+import { PADS, BUILDINGS, BRIDGE, FOOTBRIDGE } from './layout.js';
 import { heightAt, bridgeHeight } from './terrain.js';
 import { Rng, fbm2 } from '../core/rng.js';
 
@@ -471,8 +471,8 @@ function buildHut() {
 
 // --- bridge, benches, lamps ------------------------------------------------------------------
 
-function buildBridge() {
-  const { x0, z0, x1, z1, width } = BRIDGE;
+function buildBridge(B = BRIDGE, railCol = '#8e3b2c') {
+  const { x0, z0, x1, z1, width } = B;
   const len = Math.hypot(x1 - x0, z1 - z0);
   const ang = Math.atan2(z1 - z0, x1 - x0);
   const parts = [];
@@ -491,8 +491,9 @@ function buildBridge() {
         const post = new THREE.BoxGeometry(0.1, 0.9, 0.1);
         post.translate(px, y + 0.45, pz);
         parts.push(colorize(post, WOOD));
-        const leg = new THREE.BoxGeometry(0.14, y - WATER_Y + 0.3, 0.14);
-        leg.translate(px, (y + WATER_Y - 0.3) / 2, pz);
+        const foot = heightAt(px, pz) - 0.3;
+        const leg = new THREE.BoxGeometry(0.14, Math.max(0.2, y - foot), 0.14);
+        leg.translate(px, (y + foot) / 2, pz);
         parts.push(colorize(leg, WOOD_D));
       }
     }
@@ -510,7 +511,7 @@ function buildBridge() {
       seg.rotateZ(pitch);
       seg.rotateY(-ang);
       seg.translate((ax + bx) / 2 + off[0], (ay + by) / 2, (az + bz) / 2 + off[1]);
-      parts.push(colorize(seg, '#8e3b2c'));
+      parts.push(colorize(seg, railCol));
     }
   }
   const m = new THREE.Mesh(merge(parts), paint({}));
@@ -550,6 +551,7 @@ export function buildAll() {
   const hut = buildHut();
   for (const b of [gate, tower, hall, tea, hut]) { group.add(b.group); colliders.push(...b.colliders); }
   group.add(buildBridge());
+  group.add(buildBridge(FOOTBRIDGE, '#6e4f38'));
   const benches = [[-8, 6, 1.2], [18, 20, -2.1], [6, -4.5, 0], [-12, -33, 0.6], [-6, 33, 0.8]].map(([x, z, r]) => bench(x, z, r));
   benches.forEach((b) => { group.add(b.mesh); colliders.push(b.collider); });
   const lamps = [[3, -26], [-1, -6], [-6, 4], [-5, 22], [-9, 32], [15, 32], [5, -50], [-4, -38], [21, 8]].map(([x, z]) => pathLamp(x, z));

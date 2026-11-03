@@ -20,7 +20,7 @@ Then open the address Vite prints (it ends in `/the-quiet-path/`).
 
 | | Touch | Keyboard & mouse |
 |---|---|---|
-| Walk | Tap the ground where you'd like to go | Click the ground, or W A S D / ↑ ↓ |
+| Walk | Tap the ground where you'd like to go; tap **Stop** to stop | Click the ground (Esc stops), or W A S D / ↑ ↓ |
 | Look around | Drag | Mouse drag, or ← → |
 | Approach something | Tap its symbol, or use the **Nearby** buttons | Click it, Tab to Nearby, or E for the nearest |
 | Camera | Camera button; drag to frame, pinch to zoom, tap to focus, shutter | C; scroll to zoom, click to focus, F cycles focus, Space for the shutter |

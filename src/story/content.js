@@ -269,7 +269,7 @@ export async function onEnterZone(zone, api) {
   if (zone === 'gate' && !api.flag('arrived')) {
     api.setFlag('arrived');
     api.whisper('The bus left you where the road ends. A wooden gate stands among the cedars, and a path leads down into the valley.', 8000);
-    setTimeout(() => api.whisper('Tap the ground to walk there. Drag to look around. Tap anything with a symbol to approach it.', 7000), 8800);
+    setTimeout(() => api.whisper('Tap the ground to walk there — tap Stop or press Esc to stop. Drag to look around. Tap a symbol to look at something.', 7000), 8800);
     return;
   }
   if (zone === 'forest' && !api.flag('heardSweep') && t <= 1 && api.weather !== 'rain') {

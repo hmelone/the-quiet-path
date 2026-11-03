@@ -123,7 +123,7 @@ export function openAbout(root) {
       ...row('bell', 'bell', 'A bell you can invite'),
     ),
     h('h3', {}, 'How to move'),
-    h('p', {}, 'Tap or click the ground to stroll there. Drag to look around. On a keyboard: W A S D or arrow keys to walk, E to use the nearest thing, C for the camera, P for the album, Esc for the menu. Everything nearby is also listed in the “Nearby” buttons at the bottom left.'),
+    h('p', {}, 'Tap or click the ground to stroll there; while walking, tap Stop (or press Esc) to stop. Tapping a symbol to look at something opens it right where you are — no walking needed. Drag to look around. On a keyboard: W A S D or arrow keys to walk, E to use the nearest thing, C for the camera, P for the album, Esc for the menu. Everything nearby is also listed in the “Nearby” buttons at the bottom left.'),
     h('h3', {}, 'The bell'),
     h('p', {}, 'Now and then a bell sounds from the tower. Everyone in the valley stops where they are and enjoys three breaths — you’re invited to as well. You can change how often this happens in Settings.'),
     h('h3', {}, 'About the setting'),
