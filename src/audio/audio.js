@@ -178,8 +178,7 @@ class AudioEngine {
     const birdRate = (p.birds ?? 0) * e.daylight * (1 - e.rain * 0.8) * (p.muffled ? 0.4 : 1);
     if (Math.random() < birdRate * 0.07) this._bird(p.muffled ? 0.3 : 1);
     if (e.night && !p.muffled && Math.random() < 0.25 * (1 - e.rain)) this._cricket();
-    if ((p.frogs ?? 0) && (e.time >= 3 || e.rain) && Math.random() < 0.08 * p.frogs) this._frog();
-    if ((p.trickle ?? 0) && Math.random() < 0.25 * p.trickle) this._bubble();
+    if ((p.frogs ?? 0) && (e.time >= 3 || e.rain) && Math.random() < 0.03 * p.frogs) this._frog();
     if (e.rain && Math.random() < 0.5 * (p.muffled ? 0.3 : 1)) this._drip();
     if (p.room && Math.random() < 0.006) this._creak();
     // forest voices: a woodpecker by day, an owl at night
@@ -263,51 +262,53 @@ class AudioEngine {
     for (let i = 0; i < 3; i++) this._tone(t + i * 0.06, f, f, 0.04, 0.012, { pan, verb: 0 });
   }
 
+  /** A soft frog croak: a quick pulse train of filtered noise (no pitch sweep). */
   _frog() {
-    const t = this.ctx.currentTime;
-    const pan = rand(-0.7, 0.7), f = rand(280, 420);
-    const n = Math.floor(rand(2, 5));
-    for (let i = 0; i < n; i++) this._tone(t + i * 0.13, f * 1.2, f, 0.09, 0.03, { type: 'triangle', pan, verb: 0.1 });
+    const t0 = this.ctx.currentTime + 0.05;
+    const pan = rand(-0.7, 0.7), f = rand(500, 800);
+    const pulses = Math.floor(rand(4, 8));
+    const calls = Math.random() < 0.5 ? 1 : 2;
+    for (let c = 0; c < calls; c++) {
+      for (let i = 0; i < pulses; i++) {
+        this._burst(t0 + c * 0.45 + i * 0.028, 0.02, 0.018, 'bandpass', f, 4, 'ambience', pan, 0.15);
+      }
+    }
   }
 
-  _bubble() {
-    const t = this.ctx.currentTime + rand(0, 0.2);
-    const f = rand(700, 1500);
-    this._tone(t, f, f * 1.8, 0.04, 0.02, { pan: rand(-0.3, 0.3), verb: 0.15 });
-  }
-
+  /** A raindrop: a tiny filtered tick, not a whistle. */
   _drip() {
     const t = this.ctx.currentTime + rand(0, 0.2);
-    const f = rand(1500, 3200);
-    this._tone(t, f, f * 0.6, 0.03, 0.015, { pan: rand(-1, 1), verb: 0.2 });
+    this._burst(t, 0.012, rand(0.006, 0.014), 'bandpass', rand(2500, 5000), 1.5, 'ambience', rand(-1, 1), 0.1);
   }
 
+  // The forest scheduler still uses these voices. Keep their envelopes gentle
+  // and omit pitch sweeps, matching the quieter sound-effects update.
   _woodpecker() {
     const t0 = this.ctx.currentTime + 0.05;
     const pan = rand(-0.9, 0.9);
     const n = Math.floor(rand(10, 18));
     for (let i = 0; i < n; i++) {
-      const t = t0 + i * 0.055;
-      const v = 0.035 * (1 - i / (n * 1.3));
-      this._burst(t, 0.025, v, 'bandpass', rand(1300, 1500), 6, 'ambience', pan, 0.3);
-      this._tone(t, 900, 700, 0.03, v * 0.5, { pan, verb: 0.3 });
+      this._burst(t0 + i * 0.055, 0.025, 0.025 * (1 - i / (n * 1.3)),
+        'bandpass', rand(1300, 1500), 6, 'ambience', pan, 0.3);
     }
   }
 
   _owl() {
     const t = this.ctx.currentTime + 0.1;
-    const pan = rand(-0.8, 0.8);
-    const f = rand(360, 420);
-    const hoot = (when, dur, amp) => this._tone(when, f * 1.02, f * 0.94, dur, amp, { pan, verb: 0.6 });
-    hoot(t, 0.35, 0.035);
-    hoot(t + 0.9, 0.18, 0.025);
-    hoot(t + 1.15, 0.5, 0.03);
+    const pan = rand(-0.8, 0.8), f = rand(360, 420);
+    // Fixed-frequency hoots: no rising or falling "boing" contour.
+    for (const [delay, dur, peak] of [[0, 0.35, 0.035], [0.9, 0.18, 0.025], [1.15, 0.5, 0.03]]) {
+      this._tone(t + delay, f, f, dur, peak, { pan, verb: 0.6 });
+    }
   }
 
+  /** Old wood settling: a soft, short rasp of filtered noise. */
   _creak() {
     const t = this.ctx.currentTime;
-    this._tone(t, 180, 140, 0.5, 0.012, { type: 'sawtooth', pan: rand(-0.6, 0.6), verb: 0.4 });
+    const pan = rand(-0.6, 0.6);
+    for (let i = 0; i < 5; i++) this._burst(t + i * 0.05, 0.05, 0.006, 'bandpass', rand(380, 520), 3, 'ambience', pan, 0.3);
   }
+
 
   // --- public one-shots -------------------------------------------------------
 

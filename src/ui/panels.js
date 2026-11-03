@@ -76,7 +76,7 @@ export function openSettings(root, onAudioNeeded) {
     toggle('invertLook', 'Invert drag direction'),
     toggle('momentum', 'Gliding look (momentum)'),
     toggle('breathGuide', 'Breathing circle while sitting'),
-    toggle('instantReview', 'See photos right away', 'Otherwise, film is developed each evening in your room.'),
+    toggle('instantReview', 'See photos right away', 'Otherwise, develop your film in the darkroom corner of your hut, whenever you like.'),
     h('h3', {}, 'Visual quality'),
     seg('quality', [['auto', 'Auto'], ['low', 'Low'], ['medium', 'Medium'], ['high', 'High']], 'Detail', 'Lower settings run more smoothly on older phones. Changes apply fully when you next move.'),
   );
@@ -150,7 +150,7 @@ export async function openAlbum(root, { highlight } = {}) {
   const render = async () => {
     body.innerHTML = '';
     if (!photos.persistent) body.append(h('p', { class: 'note' }, 'Photos can’t be saved in this browser window (private mode or storage blocked), so they’ll be gone when you close it.'));
-    if (waiting) body.append(h('p', { class: 'empty' }, `${waiting} undeveloped ${waiting === 1 ? 'frame' : 'frames'} waiting on your film. Develop them in the darkroom corner of your room${settings.get('instantReview') ? '' : ', in the evening'}.`));
+    if (waiting) body.append(h('p', { class: 'empty' }, `${waiting} undeveloped ${waiting === 1 ? 'frame' : 'frames'} waiting on your film. Develop them in the darkroom corner of your hut, whenever you like.`));
     if (!developed.length) {
       body.append(h('p', { class: 'empty' }, 'No photographs yet. Raise your camera with the button in the corner, or press C.'));
       return;

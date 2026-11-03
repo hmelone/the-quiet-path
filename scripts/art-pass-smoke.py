@@ -11,7 +11,7 @@ from playwright.sync_api import sync_playwright
 from PIL import Image, ImageChops
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / 'docs/art-pass'
+OUT = Path(os.environ.get('QUIET_PATH_ARTIFACT_DIR', ROOT / 'docs/art-pass'))
 OUT.mkdir(parents=True, exist_ok=True)
 URL = os.environ.get('QUIET_PATH_URL', 'http://127.0.0.1:5175/the-quiet-path/')
 report = {'url': URL, 'checks': [], 'errors': []}

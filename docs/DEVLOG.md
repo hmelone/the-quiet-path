@@ -189,8 +189,25 @@ Respond to v1 playtesting: free walking in 3D, a Plum Village–style practice c
 
 ---
 
-## v2.3: Plum Light — a class art iteration
-*Date: November 3, 2026 · based on latest `main`, `18fa928`*
+## v2.3: Develop any time; no more "boing"
+*Date: 2026-11-04*
+
+### Your playtest notes
+- You wanted to develop photos at any time, not only at night.
+- There were still occasional "boing" noises in the sound.
+
+### What changed
+- **Develop whenever you like:** the darkroom corner of your hut now works at any time of day.
+- **The "boing" sounds were quick pitch sweeps** in a few small sound effects. They're replaced with natural, unpitched textures:
+  - **Bubbles by the pond**, a rising "bloop" that played as often as every couple of seconds, are removed.
+  - **Frogs** were a falling triangle-wave tone. They're now a soft croak made of a rapid pulse of filtered noise, and less frequent.
+  - **Rain drips** were a falling whistle. They're now tiny filtered ticks.
+  - **The indoor wood creak** was a falling sawtooth tone. It's now a soft, short rasp of filtered noise.
+
+---
+
+## v2.4: Plum Light — a class art iteration
+*Date: November 3, 2026 · visual baseline `18fa928`; integrated with `main` at `52ae665`*
 
 ### Direction and implementation
 
@@ -213,3 +230,9 @@ The [review gallery](art-pass/README.md) contains the fixed-pose hut comparison,
 All new 3D geometry is original procedural work. Title illustrations were generated specifically for the project; [credits](../CREDITS.md) and [art provenance](../public/art/README.md) record the source. No stock art, models or textures were imported. Buildings and people are fictional design interpretations, not verified reconstructions of a Plum Village site; no new religious authenticity claim or practice text is introduced.
 
 Deferred refinements: more expressive walking/seated animation and individual clothing variations, seasonal blossom changes, finer bark/wood texture painting, extra orchard tools and personal hut objects, and physical-phone performance/contrast playtests. The requested priority scene, title and fish are complete, with a first pass on all listed interior prop categories. Water reflects the sky/light rather than rendering a second mirrored world, to limit mobile cost.
+
+### Integration with the newer main branch
+
+Retained the v2.3 develop-at-any-time behavior and unpitched frog, drip and wood sounds. Its forest scheduler still referenced removed woodpecker/owl methods; restored filtered-noise woodpecker taps and fixed-frequency owl hoots so those random events cannot throw missing-method errors. The title and pond art remain in v2.4. `node --test scripts/forest-audio-check.mjs` forces both rare forest scheduler branches and verifies noise taps and constant-frequency hoots.
+
+Post-merge validation: production build, all 23 browser checks, and the focused forest-audio regression check passed. Browser evidence for this rerun was written to a separate temporary directory to preserve the original review captures.
