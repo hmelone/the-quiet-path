@@ -60,3 +60,7 @@ The opening now has original wide and portrait paintings beneath a flowering plu
 **See and playtest:** [before/after, title screenshots, actual fish photograph and test evidence](docs/art-pass/README.md). Continue a saved stay or walk down to the hut, follow its path to the pond, and look down from the bank with the camera. Visit the hall entrance, tea terrace and darkroom corner for the smaller details.
 
 **Validation:** production build at `/the-quiet-path/`; Chromium desktop and emulated phone checks for Begin/Continue and v2 saves, exploration, touch controls, interactions, reduced motion and persisted fish photography. The [repeatable smoke script](scripts/art-pass-smoke.py) records exact results in [checks.json](docs/art-pass/checks.json). Physical phone performance still needs playtesting. Original art provenance is in [CREDITS.md](CREDITS.md); remaining refinements are in the [development log](docs/DEVLOG.md).
+
+### More natural people and wildlife · November 3, 2026
+
+Facial spheres are replaced by integrated head profiles with subtle surface detail. People have more natural proportions, draped clothing, separate tea/meditation poses and restrained walking steps. Wildlife has shaped muzzles, ears, haunches and jointed legs, with flush eyes and more natural fish fins. [See close-ups, before/after comparisons and in-game views](docs/characters/README.md).

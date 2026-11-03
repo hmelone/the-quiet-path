@@ -2,124 +2,12 @@
 // orchard squirrels, small birds overhead and fireflies on warm evenings.
 import * as THREE from 'three';
 import { Rng } from '../core/rng.js';
-import { colorize, merge, radialNormals } from './geo.js';
+import { colorize } from './geo.js';
 import { paint } from './materials.js';
 import { groundAt } from './terrain.js';
 import { POND, WATER_Y, pondDist, BUILDINGS, PADS } from './layout.js';
 
-function deerGeo() {
-  const p = [];
-  const body = new THREE.CapsuleGeometry(0.28, 0.75, 4, 10).rotateZ(Math.PI / 2).translate(0, 0.95, 0);
-  p.push(colorize(body, (x, y) => new THREE.Color('#9a6a44').lerp(new THREE.Color('#d8c0a0'), Math.max(0, 0.85 - y) * 2.5)));
-  for (const [x, z] of [[-0.42, 0.12], [-0.42, -0.12], [0.4, 0.12], [0.4, -0.12]]) {
-    p.push(colorize(new THREE.CylinderGeometry(0.035, 0.03, 0.85, 5).translate(x, 0.43, z), '#6e4a32'));
-  }
-  const neck = new THREE.CylinderGeometry(0.09, 0.13, 0.55, 7).rotateZ(-0.6).translate(0.62, 1.25, 0);
-  p.push(colorize(neck, '#9a6a44'));
-  const tail = new THREE.SphereGeometry(0.07, 6, 4).translate(-0.7, 1.05, 0);
-  p.push(colorize(tail, '#f0e8dc'));
-  const g = merge(p);
-  return g;
-}
-function deerHeadGeo() {
-  const p = [];
-  p.push(colorize(new THREE.SphereGeometry(0.12, 8, 6).scale(1.6, 0.9, 0.9).translate(0.1, 0, 0), '#8f6040'));
-  for (const s of [-1, 1]) p.push(colorize(new THREE.ConeGeometry(0.05, 0.16, 5).rotateX(s * 0.5).translate(-0.02, 0.12, s * 0.08), '#7a5236'));
-  p.push(colorize(new THREE.SphereGeometry(0.03, 5, 4).translate(0.29, -0.01, 0), '#2a201a'));
-  return merge(p);
-}
-
-function heronGeo() {
-  const p = [];
-  p.push(colorize(new THREE.SphereGeometry(0.2, 10, 8).scale(1.4, 0.9, 0.8).translate(0, 0.95, 0), '#9aa0a6'));
-  p.push(colorize(new THREE.CylinderGeometry(0.035, 0.05, 0.5, 6).rotateZ(-0.3).translate(0.2, 1.25, 0), '#c9cdd0'));
-  p.push(colorize(new THREE.SphereGeometry(0.07, 8, 6).scale(1.3, 1, 1).translate(0.3, 1.5, 0), '#d8dadc'));
-  p.push(colorize(new THREE.ConeGeometry(0.025, 0.22, 5).rotateZ(-Math.PI / 2).translate(0.47, 1.49, 0), '#c9a640'));
-  for (const s of [-1, 1]) p.push(colorize(new THREE.CylinderGeometry(0.012, 0.012, 0.8, 4).translate(0, 0.4, s * 0.06), '#5a5040'));
-  return merge(p);
-}
-
-function catGeo() {
-  const p = [];
-  const body = new THREE.SphereGeometry(0.2, 10, 8).scale(1.3, 0.55, 1);
-  body.translate(0, 0.1, 0);
-  radialNormals(body, 0, 0, 0);
-  p.push(colorize(body, (x, y, z) => new THREE.Color('#d08a4a').lerp(new THREE.Color('#f2e2cc'), Math.max(0, -z) * 2)));
-  p.push(colorize(new THREE.SphereGeometry(0.09, 8, 6).translate(0.2, 0.12, 0.08), '#d08a4a'));
-  for (const s of [-1, 1]) p.push(colorize(new THREE.ConeGeometry(0.03, 0.06, 4).translate(0.22, 0.21, 0.08 + s * 0.04), '#b0703a'));
-  p.push(colorize(new THREE.TorusGeometry(0.18, 0.03, 5, 12, Math.PI).rotateX(Math.PI / 2).translate(-0.02, 0.06, 0), '#c07a3a'));
-  return merge(p);
-}
-
-function squirrelGeo() {
-  const p = [];
-  p.push(colorize(new THREE.SphereGeometry(0.07, 8, 6).scale(1.4, 1, 1).translate(0, 0.08, 0), '#8a4a2a'));
-  p.push(colorize(new THREE.SphereGeometry(0.045, 6, 5).translate(0.09, 0.13, 0), '#8a4a2a'));
-  p.push(colorize(new THREE.SphereGeometry(0.06, 6, 5).scale(0.8, 1.8, 0.8).translate(-0.1, 0.17, 0), '#a0603a'));
-  return merge(p);
-}
-
-// A small, reusable fish with a tapered body, paired fins and dark eyes.
-// Its separate tail pivots while gliding; no textures or skeletal rig required.
-function koiGeo(seed = 0) {
-  const p = [];
-  const body = new THREE.SphereGeometry(0.14, 12, 8).scale(2.5, 0.65, 1);
-  p.push(colorize(body, (x, y, z) => {
-    const patch = Math.sin(x * 14 + seed * 2) + Math.sin(z * 20 + seed);
-    return new THREE.Color(patch > 0.4 ? '#bd6235' : seed % 3 === 0 ? '#dfb86d' : '#eee0c4');
-  }));
-  for (const side of [-1, 1]) {
-    p.push(colorize(new THREE.SphereGeometry(0.018, 6, 4).translate(0.25, 0.04, side * 0.075), '#242d29'));
-    p.push(colorize(new THREE.ConeGeometry(0.085, 0.16, 3).rotateX(side * 0.7).rotateZ(0.9).translate(0.01, -0.03, side * 0.15), '#c69a68'));
-  }
-  return merge(p);
-}
-
-function koiTailGeo() {
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute([
-    0, 0, 0, -0.27, 0.015, -0.15, -0.21, 0, 0,
-    0, 0, 0, -0.21, 0, 0, -0.27, 0.015, 0.15,
-  ], 3));
-  g.computeVertexNormals();
-  return colorize(g, '#c38b59');
-}
-
-function rabbitGeo() {
-  const p = [];
-  p.push(colorize(new THREE.SphereGeometry(0.13, 10, 8).scale(1.3, 1, 1).translate(0, 0.13, 0), '#8a7660'));
-  p.push(colorize(new THREE.SphereGeometry(0.08, 8, 6).translate(0.15, 0.24, 0), '#8a7660'));
-  for (const s of [-1, 1]) p.push(colorize(new THREE.SphereGeometry(0.03, 6, 4).scale(0.6, 2.6, 1).rotateZ(-0.2).translate(0.13, 0.36, s * 0.035), '#9a866e'));
-  p.push(colorize(new THREE.SphereGeometry(0.04, 6, 4).translate(-0.17, 0.15, 0), '#f2ece2'));
-  return merge(p);
-}
-
-function foxGeo() {
-  const p = [];
-  p.push(colorize(new THREE.CapsuleGeometry(0.13, 0.42, 4, 8).rotateZ(Math.PI / 2).translate(0, 0.42, 0), (x, y) => new THREE.Color(y < 0.36 ? '#f0e4d4' : '#c8662a')));
-  for (const [x, z] of [[-0.2, 0.07], [-0.2, -0.07], [0.2, 0.07], [0.2, -0.07]]) p.push(colorize(new THREE.CylinderGeometry(0.025, 0.02, 0.36, 5).translate(x, 0.18, z), '#3a2a20'));
-  p.push(colorize(new THREE.SphereGeometry(0.1, 8, 6).scale(1.2, 1, 1).translate(0.36, 0.56, 0), '#c8662a'));
-  p.push(colorize(new THREE.ConeGeometry(0.05, 0.14, 6).rotateZ(-Math.PI / 2).translate(0.5, 0.53, 0), '#e8dccc'));
-  for (const s of [-1, 1]) p.push(colorize(new THREE.ConeGeometry(0.04, 0.1, 4).translate(0.32, 0.68, s * 0.05), '#b0551f'));
-  const tail = new THREE.CapsuleGeometry(0.07, 0.3, 4, 8).rotateZ(Math.PI / 2 + 0.5).translate(-0.42, 0.38, 0);
-  p.push(colorize(tail, (x) => new THREE.Color(x < -0.55 ? '#f4ece0' : '#c8662a')));
-  return merge(p);
-}
-
-function owlGeo() {
-  const p = [];
-  const body = new THREE.SphereGeometry(0.17, 10, 8).scale(1, 1.35, 0.95);
-  radialNormals(body, 0, 0, 0);
-  p.push(colorize(body, (x, y, z) => new THREE.Color('#7a6248').lerp(new THREE.Color('#c9b48e'), Math.max(0, z) * 2.5)));
-  for (const s of [-1, 1]) {
-    p.push(colorize(new THREE.SphereGeometry(0.045, 8, 6).translate(s * 0.065, 0.1, 0.13), '#f0e2b8'));
-    p.push(colorize(new THREE.SphereGeometry(0.022, 6, 4).translate(s * 0.065, 0.1, 0.17), '#1e1a16'));
-    p.push(colorize(new THREE.ConeGeometry(0.03, 0.07, 4).translate(s * 0.09, 0.25, 0), '#6a5440'));
-  }
-  p.push(colorize(new THREE.ConeGeometry(0.02, 0.05, 4).rotateX(Math.PI / 2).translate(0, 0.05, 0.17), '#c9a640'));
-  p.push(colorize(new THREE.CylinderGeometry(0.035, 0.035, 0.9, 6).rotateZ(Math.PI / 2).translate(0, -0.22, 0), '#5a4334'));
-  return merge(p);
-}
+import { deerGeo, deerHeadGeo, heronGeo, catGeo, squirrelGeo, koiGeo, koiTailGeo, rabbitGeo, foxGeo, owlGeo, smallBirdGeo } from './animal-models.js';
 
 function butterflyGeo() {
   const g = new THREE.BufferGeometry();
@@ -134,20 +22,40 @@ function butterflyGeo() {
   return colorize(g, '#ffffff');
 }
 
-function smallBirdGeo() {
-  const p = [];
-  p.push(colorize(new THREE.SphereGeometry(0.06, 8, 6).scale(1.4, 1, 1).translate(0, 0.07, 0), '#7a5a40'));
-  p.push(colorize(new THREE.SphereGeometry(0.04, 6, 5).translate(0.08, 0.11, 0), '#5a4434'));
-  p.push(colorize(new THREE.ConeGeometry(0.012, 0.035, 4).rotateZ(-Math.PI / 2).translate(0.12, 0.11, 0), '#d8a640'));
-  p.push(colorize(new THREE.BoxGeometry(0.07, 0.01, 0.04).translate(-0.1, 0.09, 0), '#5a4434'));
-  return merge(p);
-}
-
 function birdGeo() {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, -0.18, 0.05, 0.25, 0.04, 0, 0, 0, 0, 0, 0.04, 0, 0, -0.18, 0.05, -0.25], 3));
   g.computeVertexNormals();
   return colorize(g, '#2e2a26');
+}
+
+// Rotate the sculpted limbs around their hips/shoulders inside one draw call.
+// Phase follows actual movement and the same bell slowdown as the animal.
+function walk(a, dt, go, moving, rate, stride) {
+  const mesh = a.obj.isMesh ? a.obj : a.obj.children[0];
+  const g = mesh.geometry, rig = g.userData.walk;
+  if (!rig) return;
+  a.walkPhase ??= a.x * 0.73;
+  a.walkAmount ??= 0;
+  if (moving) a.walkPhase += dt * go * rate * Math.PI * 2;
+  a.walkAmount += ((moving ? stride : 0) - a.walkAmount) * Math.min(1, dt * go * 9);
+  if (a.walkAmount < 0.0001) {
+    if (!a.wasWalking) return;
+    a.walkAmount = 0;
+  }
+  a.wasWalking = a.walkAmount > 0;
+  const p = g.attributes.position, n = g.attributes.normal;
+  for (const limb of rig.limbs) {
+    const angle = Math.sin(a.walkPhase + limb.phase) * a.walkAmount;
+    const c = Math.cos(angle), s = Math.sin(angle), [px, py] = limb.pivot;
+    for (let v = limb.start; v < limb.start + limb.count; v++) {
+      const i = v * 3, x = rig.rest[i] - px, y = rig.rest[i + 1] - py;
+      p.setXYZ(v, px + x * c - y * s, py + x * s + y * c, rig.rest[i + 2]);
+      const nx = rig.normals[i], ny = rig.normals[i + 1];
+      n.setXYZ(v, nx * c - ny * s, nx * s + ny * c, rig.normals[i + 2]);
+    }
+  }
+  p.needsUpdate = true; n.needsUpdate = true;
 }
 
 export class Animals {
@@ -169,7 +77,17 @@ export class Animals {
     scene.add(this.fireflies);
   }
 
-  clear() { this.group.clear(); this.list = []; }
+  clear() {
+    // A change of time/weather rebuilds wildlife; release the retired meshes.
+    const geometries = new Set(), materials = new Set();
+    this.group.traverse((o) => {
+      if (o.geometry) geometries.add(o.geometry);
+      if (o.material && o.material !== this.mat) materials.add(o.material);
+    });
+    for (const g of geometries) g.dispose();
+    for (const m of materials) m.dispose();
+    this.group.clear(); this.list = [];
+  }
 
   arrange(time, weather) {
     this.clear();
@@ -182,7 +100,7 @@ export class Animals {
         const g = new THREE.Group();
         const body = new THREE.Mesh(deerGeo(), this.mat);
         const head = new THREE.Mesh(deerHeadGeo(), this.mat);
-        head.position.set(0.82, 1.48, 0);
+        head.position.set(0.48, 1.06, 0);
         body.castShadow = true;
         g.add(body, head);
         g.scale.setScalar(this.rng.range(0.9, 1.05));
@@ -238,7 +156,7 @@ export class Animals {
         const g = new THREE.Group();
         const body = new THREE.Mesh(deerGeo(), this.mat);
         const head = new THREE.Mesh(deerHeadGeo(), this.mat);
-        head.position.set(0.82, 1.48, 0);
+        head.position.set(0.48, 1.06, 0);
         body.castShadow = true;
         g.add(body, head);
         g.scale.setScalar(sc || this.rng.range(0.9, 1.05));
@@ -311,6 +229,7 @@ export class Animals {
     for (const a of this.list) {
       const o = a.obj;
       if (a.kind === 'deer') {
+        let moving = false;
         const d = Math.hypot(player.x - o.position.x, player.z - o.position.z);
         if (d < 14 && !a.leaving) {
           // drift calmly away from you
@@ -321,17 +240,20 @@ export class Animals {
           const dx = a.leaving.x - o.position.x, dz = a.leaving.z - o.position.z;
           const dd = Math.hypot(dx, dz);
           if (dd > 0.3) {
+            moving = true;
             const sp = 1.6 * dt * go;
             o.position.x += (dx / dd) * sp;
             o.position.z += (dz / dd) * sp;
             o.position.y = groundAt(o.position.x, o.position.z);
             o.rotation.y = Math.atan2(-dz, dx);
-            a.head.position.y = 1.48;
+            a.head.rotation.z += (0 - a.head.rotation.z) * Math.min(1, dt * 3);
           } else a.leaving = null;
         } else {
           // graze: head down, look up now and then
-          a.head.position.y = 1.48 - (Math.sin(t * 0.4 + a.x) > -0.2 ? 0.75 : 0);
+          const graze = Math.sin(t * 0.4 + a.x) > -0.2 ? -0.8 : 0;
+          a.head.rotation.z += (graze - a.head.rotation.z) * Math.min(1, dt * 1.8);
         }
+        walk(a, dt, go, moving, 1.25, 0.23);
       } else if (a.kind === 'heron') {
         const d = Math.hypot(player.x - o.position.x, player.z - o.position.z);
         if (d < 5 && !a.moved) {
@@ -348,7 +270,7 @@ export class Animals {
             o.rotation.y = Math.atan2(-dz, dx);
           } else a.target = null;
         }
-        o.rotation.z = Math.sin(t * 0.3) * 0.03;
+        o.rotation.z = Math.sin(t * 0.3) * 0.008;
       } else if (a.kind === 'koi') {
         a.t += dt * go;
         const ph = a.seed + a.t * a.speed;
@@ -362,7 +284,7 @@ export class Animals {
         if (Math.hypot(x - prevX, z - prevZ) > 1e-5) o.rotation.y = Math.atan2(-(z - prevZ), x - prevX);
         a.tail.rotation.y = Math.sin(a.t * 3.2 + a.seed) * 0.32;
       } else if (a.kind === 'cat') {
-        o.scale.y = 1 + Math.sin(t * 1.2) * 0.04;
+        o.scale.y = 1 + Math.sin(t * 1.2) * 0.009;
       } else if (a.kind === 'squirrel') {
         a.hopT += dt * go;
         const k = a.hopT % 6;
@@ -402,13 +324,14 @@ export class Animals {
           if (a.flee && (a.flee.left -= dt) <= 0) a.flee = null;
         } else {
           o.position.y = groundAt(o.position.x, o.position.z);
-          o.rotation.z = Math.sin(t * 6 + a.x) * 0.03; // nose twitch
+          o.rotation.z = Math.sin(t * 2 + a.x) * 0.006; // a small attentive shift
         }
       } else if (a.kind === 'fox') {
         // trot slowly along the route, pausing to look at you when you're near
         const looking = dp < 12;
         const [tx, tz] = a.route[a.leg];
         const dx = tx - o.position.x, dz = tz - o.position.z, dd = Math.hypot(dx, dz);
+        walk(a, dt, go, !looking && dd >= 0.5, 2.0, 0.29);
         if (looking) {
           o.rotation.y = Math.atan2(-(player.z - o.position.z), player.x - o.position.x);
         } else if (dd < 0.5) a.leg = (a.leg + 1) % a.route.length;
@@ -420,8 +343,7 @@ export class Animals {
           o.rotation.y = Math.atan2(-dz, dx);
         }
       } else if (a.kind === 'owl') {
-        o.rotation.y = a.yaw + Math.sin(t * 0.3) * 0.6 + (dp < 10 ? Math.atan2(-(player.z - o.position.z), player.x - o.position.x) * 0.2 : 0);
-        o.scale.y = 1 + Math.sin(t * 0.9) * 0.02;
+        // A perched owl is still; its supporting branch must stay still too.
       } else if (a.kind === 'groundBird') {
         if (dp < 5 && !a.flying) a.flying = { t: 0, ang: this.rng.f() * Math.PI * 2 };
         if (a.flying) {

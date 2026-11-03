@@ -1,0 +1,170 @@
+{
+  "url": "http://127.0.0.1:5175/the-quiet-path/",
+  "checks": [
+    {
+      "name": "production base path and wide artwork",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "fresh Begin and saved progress",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "existing v2 save offers Continue",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Continue retains progress and roll",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "hut, pond, hall and hut interior navigation routes",
+      "passed": true,
+      "detail": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "name": "keyboard exploration",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "fish glide continuously below surface inside pond",
+      "passed": true,
+      "detail": {
+        "maxStep": 0.07967655270632684,
+        "wet": true
+      }
+    },
+    {
+      "name": "fish identified in actual saved photo",
+      "passed": true,
+      "detail": {
+        "id": "mw1ay3t13xvb",
+        "day": 1,
+        "time": 2,
+        "weather": "mist",
+        "season": "spring",
+        "place": "pond",
+        "roll": 3,
+        "frame": 6,
+        "subjects": [
+          "koi beneath the surface",
+          "shapes beneath the water",
+          "a heron at the pond"
+        ],
+        "prompt": null,
+        "developed": true,
+        "created": 1793747498437
+      }
+    },
+    {
+      "name": "visible fish pixels survive saved JPEG (fish-hidden control)",
+      "passed": true,
+      "detail": {
+        "changed_pixels_above_grain": 3904,
+        "jpeg_size": [
+          1800,
+          1200
+        ]
+      }
+    },
+    {
+      "name": "fish JPEG persists across reload",
+      "passed": true,
+      "detail": 484930
+    },
+    {
+      "name": "cancel new stay returns to title",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "saved photographs appear in album",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "roll advanced and persisted",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "portrait art and reduced motion",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "phone primary controls visible and touch sized",
+      "passed": true,
+      "detail": [
+        {
+          "w": 320,
+          "h": 52,
+          "bottom": 662.28125
+        },
+        {
+          "w": 320,
+          "h": 52,
+          "bottom": 724.28125
+        }
+      ]
+    },
+    {
+      "name": "touch drag looks around",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "touch ground route available",
+      "passed": true,
+      "detail": {
+        "x": 80,
+        "y": 550
+      }
+    },
+    {
+      "name": "touch tap starts walking",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "touch Stop cancels walking",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "touch camera controls",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "look interaction opens dialog",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "low quality scene renders",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "no JavaScript errors",
+      "passed": true,
+      "detail": []
+    }
+  ],
+  "errors": [],
+  "low_tier_render": {
+    "calls": 107,
+    "triangles": 768087
+  }
+}

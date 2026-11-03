@@ -236,3 +236,26 @@ Deferred refinements: more expressive walking/seated animation and individual cl
 Retained the v2.3 develop-at-any-time behavior and unpitched frog, drip and wood sounds. Its forest scheduler still referenced removed woodpecker/owl methods; restored filtered-noise woodpecker taps and fixed-frequency owl hoots so those random events cannot throw missing-method errors. The title and pond art remain in v2.4. `node --test scripts/forest-audio-check.mjs` forces both rare forest scheduler branches and verifies noise taps and constant-frequency hoots.
 
 Post-merge validation: production build, all 23 browser checks, and the focused forest-audio regression check passed. Browser evidence for this rerun was written to a separate temporary directory to preserve the original review captures.
+
+---
+
+## v2.5: More natural people and wildlife
+*Date: November 3, 2026 · follows the merged Plum Light art pass (`77992e1`)*
+
+### Playtest feedback
+
+The round facial attachments looked odd, and people and animals still read as collections of simple shapes.
+
+### Changes
+
+Replaced the human head attachments with a continuous sculpted head: chin, jaw, cheekbones, brow and nasal profile are part of its surface; ear outlines and facial features use subtle geometry/vertex shading. Shaped shoulders, waist, hips, hands and feet into more natural proportions, softened the sleeve/torso joins, and added cloth folds. Meditation, tea-bench and reading poses now have different limbs. Corrected the mismatch between modeled facing and walking direction, and gave standing figures a small alternating leg movement.
+
+Rebuilt deer, fox, rabbit, heron, cat, squirrel, owl, small birds and koi with original anatomical cross-section meshes. Muzzles, haunches, shoulders, hocks, hooves/paws, ears and fins are shaped for their species; eyes are flush patches rather than spherical beads. Deer graze by bending a connected neck; deer/fox leg motion stays in merged meshes and follows their travel/bell slowdown. The owl's branch remains still. Existing routines, labels, interactions, save format and fish-photography path remain intact. Wildlife time/weather rebuilds release their retired model resources.
+
+### Review and validation
+
+See [the comparison gallery](characters/README.md) for front faces, figure poses, all rebuilt species, and people at walking distance on desktop and an emulated phone. Models use the existing painterly material; they are more anatomically shaped while retaining the game's stylized presentation. There are no external model/texture downloads or new application dependencies.
+
+The repeatable model checks cover geometry/transforms, proportions and draw budgets, daily routines, wildlife rebuilds and fish bounds; the production browser checks cover the full existing exploration/save/touch/photography workflow. Detailed results are recorded after the final checks below.
+
+Final results: production build passes (44 modules; JS approximately 206.65 KB gzip), all 14 new model checks and all 23 production browser checks pass, and the existing forest-audio check still passes. No JavaScript errors were observed. Existing v2 progress and film roll, navigation, touch camera/Stop, interactions, reduced-motion title and fish JPEG persistence/album all passed. [Recorded browser checks](characters/checks.json) and a [saved fish photograph](characters/fish-in-game.jpg) are included.
