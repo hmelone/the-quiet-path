@@ -236,3 +236,69 @@ Deferred refinements: more expressive walking/seated animation and individual cl
 Retained the v2.3 develop-at-any-time behavior and unpitched frog, drip and wood sounds. Its forest scheduler still referenced removed woodpecker/owl methods; restored filtered-noise woodpecker taps and fixed-frequency owl hoots so those random events cannot throw missing-method errors. The title and pond art remain in v2.4. `node --test scripts/forest-audio-check.mjs` forces both rare forest scheduler branches and verifies noise taps and constant-frequency hoots.
 
 Post-merge validation: production build, all 23 browser checks, and the focused forest-audio regression check passed. Browser evidence for this rerun was written to a separate temporary directory to preserve the original review captures.
+
+---
+
+## v2.5: Passing thoughts
+*Date: 2026-11-04*
+
+### Goal
+Let players experience a small part of practice during ordinary play: **noticing a thought arise, choosing whether to follow it, and letting wholesome thoughts (kindness, gratitude, appreciation) stay awhile**, without scores, penalties or moral labels.
+
+### The mechanic
+- **Thoughts arise on their own** as a brief line of first-person italic text above the controls, e.g. *"I could stay a little longer and watch the fish."* You can keep walking and looking while it's there. If you do nothing, it fades by itself, timed in real seconds; it pauses while your pointer or focus is on it.
+- **Two quiet responses**, different for each kind of thought. No kind is ever named on screen; the distinction lives in the writing and in what each response opens up.
+  - **Warm, grateful or appreciative thoughts:** *Linger with this* · *Let it pass*.
+    - Lingering softens the music for a moment and gives a short line that savours the moment.
+    - Some lingering opens something up:
+      - **pond thoughts:** your view turns gently toward the water;
+      - **"I hope the person sitting alone feels welcome here":** a *talk* opportunity, "The person on the bench", appears (also in Nearby). Visiting them is a small kindness that can go two ways, saying hello or sitting quietly together;
+      - **"Sister Hien didn't have to take the time to explain the bell":** the next time you talk to her, you can thank her.
+  - **Worries, judgements and impatience:** *Let it pass* · *Stay with it a moment*.
+    - *Let it pass* acknowledges that the thought arose and returns attention to the world ("You notice the thought — useful, useful — and let it be there. The water goes on moving.").
+    - *Stay with it a moment* lets the difficult feeling be present without fixing it ("You don't push it away. It's just here, like the clouds are here."). The music softens briefly.
+- **When thoughts arise:**
+  - **The pond path:** wanting to watch the fish, the lotus, light on the water, a wish for the person reading alone, "shouldn't I be more useful", comparing your walking pace, regret at missing the walking line, wishing the rain would stop.
+  - **The tea house:** impatience after lingering there a while, replaying what you said, unsure whether to talk, gratitude for the quiet kitchen and the lavender. After a cup of tea: "Someone made this tea for whoever happened to come along."
+  - **Photography,** a few seconds after you lower the camera: wanting to retake it, wondering if it'll look as good as it felt, looking through the camera more than looking, "I'm glad I noticed that", "I don't have to use every frame".
+  - **Later, walking alone:** warmth about Sister Hien's kindness (a minute after talking with her, once nobody is near), or about the note from the kitchen.
+  - **Quiet exploration anywhere:** footsteps in the quiet, the old trees, thinking of home, "am I getting enough out of this?".
+- **Pacing:**
+  - Thoughts are infrequent: about one every 3–4 minutes on *Now and then*, about every 6 on *Rarely*. There are long quiet stretches (sometimes 5–8 minutes) and at least about a minute and a half between thoughts.
+  - Each thought appears at most twice per session and never repeats within the last ten.
+  - A moment that just happened (a photo, tea) gets its chance before general thoughts.
+- **Never in the camera:** raising the camera hides any thought at once, and none arise while the viewfinder is open. Photos are rendered offscreen from the 3D scene only, so page text can never be captured.
+- **Off switch:** Settings → *Thoughts* → **Off / Rarely / Now and then** (default). The sitting meditation keeps its own returning thoughts, unchanged.
+- **Files:** `src/story/thoughts.js` (writing and pacing), `src/ui/thought.js` (the thought line), wired into `src/main.js`. There are also two new scripts in `src/story/content.js` (the person on the bench, thanking Sister Hien).
+
+### What was tested
+Playwright in headless Chromium, production-style dev server, low quality, sound muted, 17 checks, all passing. A test hook (`thoughts.debugChance`) removes the long natural wait so a thought can be triggered within seconds.
+
+| Check | Result |
+|---|---|
+| Walking along the pond path with **no input**, a thought arises on its own | ✅ (e.g. "It's so quiet I can hear my own footsteps.") |
+| The player keeps moving while it's shown | ✅ moved ~3 m during display |
+| Responses are offered and fit the kind of thought | ✅ |
+| Left alone, it **fades by itself** | ✅ |
+| Desktop click: *Let it pass* on a worry shows the acknowledgement and returns attention | ✅ |
+| Desktop click: *Linger with this* on "watch the fish" turns the view toward the pond and stays a while | ✅ |
+| Raising the camera hides the thought immediately | ✅ |
+| No thought appears while the viewfinder is open, even after taking a photo | ✅ |
+| The photo is saved (offscreen render, no page text) | ✅ |
+| After lowering the camera, a photography thought arises | ✅ ("I'm glad I noticed that.") |
+| Lingering at the tea house brings a tea-house thought | ✅ |
+| Drinking tea brings the grateful tea thought | ✅ |
+| Turning thoughts **Off** stops them, including event thoughts | ✅ |
+| **Phone (touch tap):** *Stay with it a moment* works | ✅ |
+| **Phone:** *Linger with this* on the reader thought opens "The person on the bench", listed in Nearby even if off-screen | ✅ |
+| The person on the bench can be visited | ✅ |
+
+Pacing was checked with a 20-run simulation of an hour of play (`ThoughtStream` in Node): about 16 thoughts/hour on *Now and then* (15 distinct, shortest gap 99 s, longest quiet stretch ~6 min), and about 10/hour on *Rarely* (shortest gap 217 s).
+
+Fixed during testing:
+- The fade counted game time, which runs slowly on very slow devices; it now uses real seconds.
+- Pending moments (photo, tea) now take priority over general thoughts.
+- The bench opportunity is now reachable from where the thought arises (icon range 30 m, plus a Nearby entry).
+
+### Not yet tested
+Real phones; how the writing lands for a first-time player; whether *Now and then* feels right over a longer session.
