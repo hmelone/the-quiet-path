@@ -105,6 +105,29 @@ export const SCRIPTS = {
     api.setFlag('metCat');
   },
 
+  // --- forest animals -------------------------------------------------------------------
+  async animal_deer(api) {
+    const lines = [
+      'A deer lifts its head from the grass and looks at you for a long moment, ears turning. Then it goes back to grazing, as if you were just another tree.',
+      'A young fawn stays close to its mother, legs too long for it, every step a small experiment.',
+      'The deer move between the cedars without a sound. You notice you have been holding your breath, and let it go.',
+    ];
+    await api.say({ title: 'Deer', text: lines[(api.day + api.time) % lines.length] });
+    api.setFlag('sawDeer');
+  },
+  async animal_fox(api) {
+    await api.say({ title: 'A fox', text: 'A red fox has stopped on the path. It looks at you with frank curiosity, one forepaw lifted. Then it decides you are not very interesting, and trots on about its business.' });
+    api.setFlag('sawFox');
+  },
+  async animal_rabbit(api) {
+    await api.say({ title: 'A rabbit', text: 'A rabbit sits at the edge of the path, nose twitching. Its whole body is listening. If you stay very still, it may decide to stay too.' });
+    api.setFlag('sawRabbit');
+  },
+  async animal_owl(api) {
+    await api.say({ title: 'An owl', text: 'Two round eyes in the branches. An owl turns its head almost all the way around to consider you, then slowly blinks — once, unhurried — and turns back to the dark.' });
+    api.setFlag('sawOwl');
+  },
+
   // --- pond --------------------------------------------------------------------------
   async bridge(api) {
     await api.say({ text: 'From the top of the little bridge you can see the whole pond: lotus leaves standing above the water, the hall above, the orchard below. The planks creak and settle under your feet.' });

@@ -245,7 +245,7 @@ class Game {
   itemPos(it) {
     if (it.dynamic) {
       const f = it.dynamic();
-      if (f) return { x: f.position.x, y: f.position.y + 2.1, z: f.position.z };
+      if (f) return { x: f.position.x, y: f.position.y + (it.iconY ?? 2.1), z: f.position.z };
     }
     return { x: it.x, y: it.y, z: it.z };
   }
@@ -700,6 +700,7 @@ class Game {
         frogs: Math.max(0, 1 - (pd - 1) / 3),
         room: interior ? 1 : 0,
         muffled: interior,
+        forest: interior ? 0 : forest,
       };
       audio.setScene(profile, this.world.audioEnv?.() || { daylight: this.world.atm.daylight, rain: this.world.atm.rain, wind: this.world.atm.wind, night: game.s.time >= 3 || game.s.time === 0, time: game.s.time });
       // stereo position of the stream relative to where you face
@@ -731,11 +732,20 @@ class Game {
     const v = new THREE.Vector3();
     const items = [];
     const near = [];
-    for (const it of this.world.interactables) {
+    const animalIcon = { deer: 1.9, fox: 1.0, rabbit: 0.7, owl: 0.6 };
+    const animalLabel = { deer: 'Deer', fox: 'A fox', rabbit: 'A rabbit', owl: 'An owl' };
+    const animalItems = [];
+    for (const a of this.world.animals.list) {
+      if (!a.lookable || !a.obj.visible) continue;
+      if (Math.hypot(a.obj.position.x - px.x, a.obj.position.z - px.z) > 22) continue;
+      if (animalItems.some((i) => i.akind === a.kind)) continue; // one icon per kind
+      animalItems.push({ id: `animal-${a.kind}`, akind: a.kind, kind: 'look', label: animalLabel[a.kind], dynamic: () => a.obj, iconY: animalIcon[a.kind], script: `animal_${a.kind}` });
+    }
+    for (const it of [...this.world.interactables, ...animalItems]) {
       if (it.visible && !it.visible(cond)) continue;
       const p = this.itemPos(it);
       const d = Math.hypot(p.x - px.x, p.z - px.z);
-      if (d > 16) continue;
+      if (d > (it.akind ? 22 : 16)) continue;
       // things inside a building only show from inside (and vice versa), except doorways
       const itInside = ['cushion', 'altar', 'bowlBell', 'callig', 'futon', 'desk', 'smallBell', 'note', 'darkroom'].includes(it.id);
       const isDoor = it.id === 'hallDoor' || it.id === 'hutDoor';

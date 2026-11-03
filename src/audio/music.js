@@ -26,7 +26,13 @@ class Music {
     this.lp = audio.ctx.createBiquadFilter();
     this.lp.type = 'lowpass';
     this.lp.frequency.value = 2400;
-    this.out.connect(this.lp);
+    // nothing low and steady: a high-pass removes anything that could read as a hum
+    this.hp = audio.ctx.createBiquadFilter();
+    this.hp.type = 'highpass';
+    this.hp.frequency.value = 170;
+    this.hp.Q.value = 0.5;
+    this.out.connect(this.hp);
+    this.hp.connect(this.lp);
     this.lp.connect(audio.bus.music);
     const send = audio.ctx.createGain();
     send.gain.value = 0.55;
@@ -43,8 +49,9 @@ class Music {
 
   _padLoop() {
     if (!this.running) return;
-    this._pad();
-    this._padT = setTimeout(() => this._padLoop(), rand(13, 20) * 1000);
+    // leave some quiet between chords
+    if (Math.random() < 0.7) this._pad();
+    this._padT = setTimeout(() => this._padLoop(), rand(16, 26) * 1000);
   }
 
   _noteLoop() {
@@ -58,26 +65,32 @@ class Music {
     const ctx = audio.ctx, t = ctx.currentTime + 0.1;
     const m = this.mood;
     const deg = [0, 2, 3][Math.floor(Math.random() * 3)];
-    const base = m.root - 24 + m.scale[deg % m.scale.length];
+    // mid register only (roughly 200-700 Hz): warm, never a low drone
+    const base = m.root - 12 + m.scale[deg % m.scale.length];
     const voices = [base, base + 7, base + 12 + m.scale[(deg + 2) % m.scale.length]];
-    const dur = 20;
-    for (const n of voices) {
-      for (const [type, det, amp] of [['sine', 0, 0.05], ['triangle', 4, 0.022]]) {
-        const o = ctx.createOscillator();
-        o.type = type;
-        o.frequency.value = hz(n);
-        o.detune.value = det + rand(-3, 3);
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.linearRampToValueAtTime(amp, t + 6);
-        g.gain.setValueAtTime(amp, t + dur - 8);
-        g.gain.linearRampToValueAtTime(0.0001, t + dur);
-        o.connect(g);
-        g.connect(this.out);
-        o.start(t);
-        o.stop(t + dur + 0.2);
-      }
-    }
+    const dur = 18;
+    voices.forEach((n, vi) => {
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = hz(n);
+      // a slow, slightly irregular waver, like breath on a reed
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = rand(0.07, 0.16);
+      const lfoAmt = ctx.createGain();
+      lfoAmt.gain.value = rand(3, 7); // cents
+      lfo.connect(lfoAmt);
+      lfoAmt.connect(o.detune);
+      const g = ctx.createGain();
+      const amp = 0.022 * (vi === 2 ? 0.6 : 1);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(amp, t + 7 + vi);
+      g.gain.linearRampToValueAtTime(amp * 0.6, t + 12);
+      g.gain.linearRampToValueAtTime(0.0001, t + dur);
+      o.connect(g);
+      g.connect(this.out);
+      o.start(t); lfo.start(t);
+      o.stop(t + dur + 0.2); lfo.stop(t + dur + 0.2);
+    });
   }
 
   _note() {

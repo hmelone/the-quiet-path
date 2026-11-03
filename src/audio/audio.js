@@ -182,6 +182,10 @@ class AudioEngine {
     if ((p.trickle ?? 0) && Math.random() < 0.25 * p.trickle) this._bubble();
     if (e.rain && Math.random() < 0.5 * (p.muffled ? 0.3 : 1)) this._drip();
     if (p.room && Math.random() < 0.006) this._creak();
+    // forest voices: a woodpecker by day, an owl at night
+    const fr = p.forest ?? 0;
+    if (fr > 0.2 && e.daylight > 0.4 && !e.rain && Math.random() < 0.006 * fr) this._woodpecker();
+    if (fr > 0.15 && e.night && e.time === 4 && Math.random() < 0.01 * fr) this._owl();
   }
 
   // --- small synth voices ---------------------------------------------------
@@ -276,6 +280,28 @@ class AudioEngine {
     const t = this.ctx.currentTime + rand(0, 0.2);
     const f = rand(1500, 3200);
     this._tone(t, f, f * 0.6, 0.03, 0.015, { pan: rand(-1, 1), verb: 0.2 });
+  }
+
+  _woodpecker() {
+    const t0 = this.ctx.currentTime + 0.05;
+    const pan = rand(-0.9, 0.9);
+    const n = Math.floor(rand(10, 18));
+    for (let i = 0; i < n; i++) {
+      const t = t0 + i * 0.055;
+      const v = 0.035 * (1 - i / (n * 1.3));
+      this._burst(t, 0.025, v, 'bandpass', rand(1300, 1500), 6, 'ambience', pan, 0.3);
+      this._tone(t, 900, 700, 0.03, v * 0.5, { pan, verb: 0.3 });
+    }
+  }
+
+  _owl() {
+    const t = this.ctx.currentTime + 0.1;
+    const pan = rand(-0.8, 0.8);
+    const f = rand(360, 420);
+    const hoot = (when, dur, amp) => this._tone(when, f * 1.02, f * 0.94, dur, amp, { pan, verb: 0.6 });
+    hoot(t, 0.35, 0.035);
+    hoot(t + 0.9, 0.18, 0.025);
+    hoot(t + 1.15, 0.5, 0.03);
   }
 
   _creak() {
