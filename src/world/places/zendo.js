@@ -123,7 +123,7 @@ export default {
   sound: { room: 1, wind: 0.15, birds: 0.25, leaves: 0.1, muffled: 1 },
   layers: [
     {
-      id: 'room', kind: 'paint', lw: 2.5, depth: 0.35, emissive: true, emisKey: 'day', emisGain: 0.55,
+      id: 'room', kind: 'paint', lw: 2.5, depth: 0.35, emissive: true, emisKey: 'day', emisGain: 0.28,
       particles: [{ type: 'smoke', at: [1.25, 0.52], count: 26, rise: 0.12 }],
       paint(layer, rng, pal, cond, { emis }) { paintRoom(layer, rng, pal, cond, emis); },
     },
@@ -150,7 +150,7 @@ export default {
       id: 'shafts', kind: 'paint', lw: 2.5, depth: 0.42, additive: true, emisKey: 'beam', emisGain: 0.8, pick: false,
       particles: [{ type: 'motes', count: 50, x: [0.4, 1.9], y: [0.2, 0.8], light: true, seed: 8 }],
       paint({ ctx, lw }, rng) {
-        lightShafts(ctx, rng, lw, { count: 6, from: 0.1, angle: 0.75, alpha: 0.16, x0: 0.05, x1: 1.0, color: [255, 240, 210] });
+        lightShafts(ctx, rng, lw, { count: 4, from: 0.1, angle: 0.75, alpha: 0.09, x0: 0.05, x1: 1.0, color: [255, 240, 210] });
       },
     },
     {

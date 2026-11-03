@@ -55,7 +55,7 @@ export function plankFloor(ctx, rng, R, x0, x1, yFloor, zBack, pal, planks = 26)
   }
   // soft polished sheen
   const c = R.P((x0 + x1) / 2, yFloor, 1.6);
-  dab(ctx, c[0], c[1], 0.4, 0.06, 0, [255, 236, 200], 0.08);
+  dab(ctx, c[0], c[1], 0.3, 0.04, 0, [255, 236, 200], 0.035);
   ctx.restore();
 }
 
@@ -78,7 +78,7 @@ export function shojiOnWall(ctx, R, X, Y0, Y1, z0, z1, pal, emis, glowCol = [255
   ctx.restore();
   if (emis) {
     path(emis.ctx, pts);
-    emis.ctx.fillStyle = css(glowCol, 0.9);
+    emis.ctx.fillStyle = css(glowCol, 0.75);
     emis.ctx.fill();
   }
   return pts;

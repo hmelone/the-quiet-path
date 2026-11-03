@@ -130,7 +130,7 @@ export default {
   paintKey: (c) => `${!!c.flags.noteWaiting}`,
   layers: [
     {
-      id: 'room', kind: 'paint', lw: 2.35, depth: 0.35, emissive: true, emisKey: 'day', emisGain: 0.6,
+      id: 'room', kind: 'paint', lw: 2.35, depth: 0.35, emissive: true, emisKey: 'day', emisGain: 0.4,
       paint(layer, rng, pal, cond, { emis }) { paintRoom(layer, rng, pal, cond, emis); },
     },
     {
@@ -155,7 +155,7 @@ export default {
         ctx.strokeStyle = css(pal.woodDark);
         ctx.lineWidth = 0.003;
         ctx.strokeRect(lx - 0.025, ly - 0.1, 0.05, 0.1);
-        glow(emis.ctx, lx, ly - 0.05, 0.3, [255, 190, 110], 0.9);
+        glow(emis.ctx, lx, ly - 0.05, 0.22, [255, 190, 110], 0.6);
         emis.ctx.fillStyle = css([255, 220, 160], 0.9);
         emis.ctx.fillRect(lx - 0.025, ly - 0.1, 0.05, 0.1);
         // small bell on a cushion

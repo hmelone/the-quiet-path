@@ -22,7 +22,7 @@ const TIMES = {
   },
   evening: {
     skyTop: f('#4b5987'), skyHor: f('#f2a46a'), sunCol: f('#ff9f5c'), sun: [0.8, 0.74], sunVis: 0.95,
-    tint: [1.0, 0.8, 0.66], fog: f('#d8a78c'), fogAmt: 0.36, exposure: 0.88, sat: 0.95,
+    tint: [1.0, 0.8, 0.66], fog: f('#d8a78c'), fogAmt: 0.28, exposure: 0.88, sat: 0.95,
     emis: 0.8, stars: 0.05, cloudCol: f('#e7a283'), mist: 0.3, daylight: 0.55, wind: 0.4,
   },
   night: {
