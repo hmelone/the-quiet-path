@@ -1,11 +1,13 @@
 // Ordinary wildlife: deer at the forest edge, a heron, koi, a sleeping cat,
 // orchard squirrels, small birds overhead and fireflies on warm evenings.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Rng } from '../core/rng.js';
 import { colorize } from './geo.js';
 import { paint } from './materials.js';
 import { groundAt } from './terrain.js';
 import { POND, WATER_Y, pondDist, BUILDINGS, PADS } from './layout.js';
+import { inBuilding, onBridge } from './terrain.js';
 
 import { deerGeo, deerHeadGeo, heronGeo, catGeo, squirrelGeo, koiGeo, koiTailGeo, rabbitGeo, foxGeo, owlGeo, smallBirdGeo } from './animal-models.js';
 
@@ -20,6 +22,48 @@ function butterflyGeo() {
   ], 3));
   g.computeVertexNormals();
   return colorize(g, '#ffffff');
+}
+
+/** A snake resting in an easy S-curve: olive-brown with darker bands. */
+function snakeGeo() {
+  const pts = [];
+  for (let i = 0; i <= 14; i++) {
+    const t = i / 14;
+    pts.push(new THREE.Vector3(-0.75 + t * 1.5, 0.035, Math.sin(t * Math.PI * 2.2) * 0.16 * (0.4 + t * 0.6)));
+  }
+  const curve = new THREE.CatmullRomCurve3(pts);
+  const tube = new THREE.TubeGeometry(curve, 60, 0.035, 8, false);
+  // taper toward the tail
+  const pos = tube.attributes.position;
+  const c = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    const seg = Math.floor(i / 9) / 60;
+    curve.getPoint(Math.min(1, seg), c);
+    const k = 0.35 + 0.65 * Math.min(1, seg * 1.6);
+    pos.setXYZ(i, c.x + (pos.getX(i) - c.x) * k, c.y + (pos.getY(i) - c.y) * k, c.z + (pos.getZ(i) - c.z) * k);
+  }
+  tube.computeVertexNormals();
+  const body = colorize(tube, (x) => new THREE.Color(Math.sin(x * 22) > 0.55 ? '#4a4128' : '#7a6e44'));
+  const head = new THREE.SphereGeometry(0.05, 10, 8).scale(1.5, 0.7, 1.05).translate(0.78, 0.035, 0);
+  return mergeGeometries([body.index ? body.toNonIndexed() : body, colorize(head, '#5e5434').toNonIndexed()]);
+}
+
+/** A hawk soaring: broad wings, fanned tail, pale underside. */
+function hawkGeo() {
+  const g = new THREE.BufferGeometry();
+  const v = [
+    // left wing, right wing (broad, slightly swept), tail fan
+    0.15, 0, 0, -0.2, 0, 0, -0.05, 0.02, 0.62,
+    0.15, 0, 0, -0.05, 0.02, 0.62, 0.12, 0.03, 0.55,
+    0.15, 0, 0, -0.05, 0.02, -0.62, -0.2, 0, 0,
+    0.15, 0, 0, 0.12, 0.03, -0.55, -0.05, 0.02, -0.62,
+    -0.2, 0, 0, -0.5, 0, 0.13, -0.5, 0, -0.13,
+  ];
+  g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+  g.computeVertexNormals();
+  const wings = colorize(g, (x, y, z) => new THREE.Color(Math.abs(z) > 0.45 ? '#3a2c22' : '#7a5a3e'));
+  const body = colorize(new THREE.SphereGeometry(0.09, 8, 6).scale(2.4, 0.8, 1).toNonIndexed(), '#6a4c34');
+  return mergeGeometries([wings, body]);
 }
 
 function birdGeo() {
@@ -58,6 +102,14 @@ function walk(a, dt, go, moving, rate, stride) {
   p.needsUpdate = true; n.needsUpdate = true;
 }
 
+const LAND = new Set(['deer', 'fox', 'rabbit', 'squirrel', 'groundBird', 'cat', 'snake']);
+/** Dry ground that isn't the pond, the stream bridge or inside a building. */
+export function landOk(x, z) {
+  if (pondDist(x, z) < 1.18 && !onBridge(x, z)) return false;
+  for (const b of Object.values(BUILDINGS)) if (inBuilding(b, x, z, 0.3)) return false;
+  return true;
+}
+
 export class Animals {
   constructor(scene) {
     this.scene = scene;
@@ -89,7 +141,7 @@ export class Animals {
     this.group.clear(); this.list = [];
   }
 
-  arrange(time, weather) {
+  arrange(time, weather, day = 1) {
     this.clear();
     const rain = weather === 'rain';
     this.time = time;
@@ -210,6 +262,23 @@ export class Animals {
         this.addAnimal(g, { kind: 'squirrel', label: 'a squirrel in the forest', x, z, hopT: this.rng.f() * 5 });
       }
     }
+    // --- rare visitors: not every day, and the same for the same day and time ---
+    const rare = new Rng(`rare-${day}-${time}`);
+    if ((time === 1 || time === 2) && weather === 'clear' && rare.f() < 0.4) {
+      const m = new THREE.Mesh(hawkGeo(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+      this.addAnimal(m, { kind: 'hawk', label: 'a hawk circling overhead', x: 0, z: 0, y: 40, phase: rare.f() * 6, lookable: true, iconY: 0 });
+    }
+    if (time === 4 && !rain && rare.f() < 0.55) {
+      const m = new THREE.Mesh(owlGeo(), this.mat);
+      m.visible = false;
+      this.addAnimal(m, { kind: 'owlFly', label: 'an owl gliding over the valley', x: -80, z: 0, y: 10, wait: 8 + rare.f() * 20 });
+    }
+    if ((time === 1 || time === 2) && weather !== 'rain' && rare.f() < (day >= 2 ? 0.25 : 0.12)) {
+      const spots = [[-10.5, 18.8], [13.2, 26.6], [-29, 33.6], [6.6, -41.5]];
+      const [x, z] = spots[Math.floor(rare.f() * spots.length)];
+      const m = new THREE.Mesh(snakeGeo(), this.mat);
+      this.addAnimal(m, { kind: 'snake', label: 'a snake resting on the warm stones', x, z, yaw: rare.f() * 6, lookable: true });
+    }
     this.fireflies.visible = (time === 3 || time === 4) && !rain;
   }
 
@@ -226,6 +295,7 @@ export class Animals {
 
   update(dt, t, player, pause) {
     const go = 1 - pause * 0.8;
+    for (const a of this.list) { a._px = a.obj.position.x; a._pz = a.obj.position.z; }
     for (const a of this.list) {
       const o = a.obj;
       if (a.kind === 'deer') {
@@ -383,6 +453,63 @@ export class Animals {
         o.scale.z = 2.4 * (0.25 + Math.abs(Math.sin(t * 14 + a.phase)) * 0.75);
       }
     }
+    for (const a of this.list) {
+      const o = a.obj;
+      if (a.kind === 'hawk') {
+        // slow soaring circles on warm air, barely a wingbeat
+        const ang = a.phase + t * 0.06 * go;
+        o.position.set(Math.cos(ang) * 46, 38 + Math.sin(t * 0.13) * 3, Math.sin(ang) * 38 - 8);
+        o.rotation.set(0, -ang - Math.PI / 2, 0.28);
+      } else if (a.kind === 'owlFly') {
+        // now and then an owl glides across the valley at night
+        if (!o.visible) {
+          a.wait -= dt;
+          if (a.wait <= 0) {
+            o.visible = true;
+            a.dir = this.rng.f() < 0.5 ? 1 : -1;
+            a.lane = this.rng.range(-40, 30);
+            o.position.set(-75 * a.dir, 11, a.lane);
+            a.hooted = false;
+          }
+        } else {
+          o.position.x += a.dir * 4.5 * dt * go;
+          o.position.y = 11 + Math.sin(t * 0.6) * 1.2;
+          o.rotation.set(0, a.dir > 0 ? 0 : Math.PI, Math.sin(t * 2.4) * 0.15);
+          if (Math.abs(o.position.x) > 78) { o.visible = false; a.wait = 70 + this.rng.f() * 80; }
+        }
+      } else if (a.kind === 'snake') {
+        if (a.leaving) {
+          a.leaving -= dt;
+          const sp = 0.22 * dt * go;
+          o.position.x += Math.cos(-o.rotation.y) * sp;
+          o.position.z += Math.sin(-o.rotation.y) * sp;
+          o.position.y = groundAt(o.position.x, o.position.z);
+          o.rotation.y += Math.sin(t * 3) * 0.01;
+          if (a.leaving <= 0) o.visible = false;
+        } else {
+          o.scale.x = 1 + Math.sin(t * 0.5) * 0.015; // breathing
+        }
+      }
+    }
+    // land animals never wade into the pond or walk through walls:
+    // if a step would take them there, they stay put and turn away
+    for (const a of this.list) {
+      if (!LAND.has(a.kind) || (a.kind === 'groundBird' && a.flying)) continue;
+      const o = a.obj;
+      if (!landOk(o.position.x, o.position.z)) {
+        o.position.x = a._px; o.position.z = a._pz;
+        if (!landOk(o.position.x, o.position.z)) {
+          // spawned in a bad spot: step out of the water, away from its centre
+          const ang = Math.atan2(o.position.z - POND.z, o.position.x - POND.x);
+          o.position.x = POND.x + Math.cos(ang) * POND.rx * 1.45;
+          o.position.z = POND.z + Math.sin(ang) * POND.rz * 1.45;
+        }
+        o.position.y = groundAt(o.position.x, o.position.z);
+        if (a.leaving) a.leaving = null;
+        if (a.flee) a.flee.ang += Math.PI * 0.75;
+        if (a.kind === 'squirrel' || a.kind === 'rabbit') a.yaw = (a.yaw || 0) + Math.PI;
+      }
+    }
     if (this.fireflies.visible) {
       const pos = this.fireflies.geometry.attributes.position;
       this.ffSeeds.forEach(([ox, oz, ph], i) => {
@@ -391,6 +518,12 @@ export class Animals {
       pos.needsUpdate = true;
       this.fireflies.material.opacity = 0.5 + 0.5 * Math.sin(t * 2.3);
     }
+  }
+
+  /** The snake decides it's time to move on. */
+  snakeLeaves() {
+    const sn = this.list.find((a) => a.kind === 'snake');
+    if (sn) sn.leaving = 9;
   }
 
   /** Animals within range of a point (for photo subjects). */

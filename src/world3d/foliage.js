@@ -56,32 +56,64 @@ function branchGeo(from, to, r0, r1, seed) {
   return colorize(g, (x, y, z) => vary(C('#604b47'), 0.07, x, y, z, seed));
 }
 
-/** A reusable, entirely procedural plum: open branches and small painted blossom sprays. */
+/**
+ * A plum tree, as it really looks: a short, dark, gnarled trunk; angular,
+ * zig-zagging branches and many thin twigs; and small five-petalled blossoms
+ * scattered close along the twigs (not puffballs). In leaf (flowering=false)
+ * it carries small oval leaves and dusky plums instead.
+ */
 export function plumTreeGeo(seed = 1, flowering = true) {
   const rng = new Rng(`plum-${seed}`), parts = [];
-  const fork = [0.28, 1.9, 0.1];
-  parts.push(branchGeo([0, 0, 0], [-0.2, 0.95, 0.12], 0.32, 0.25, seed));
-  parts.push(branchGeo([-0.2, 0.95, 0.12], fork, 0.25, 0.18, seed));
-  for (let i = 0; i < 6; i++) {
-    const a = i * 2.4 + seed * 0.8, r = rng.range(1.4, 2.8);
-    const bend = [Math.cos(a) * r * 0.6, rng.range(2.5, 3.7), Math.sin(a) * r * 0.6];
-    const tip = [Math.cos(a) * r, bend[1] + rng.range(0.25, 1.1), Math.sin(a) * r];
-    parts.push(branchGeo(fork, bend, 0.13, 0.075, seed + i));
-    parts.push(branchGeo(bend, tip, 0.075, 0.018, seed + i));
-    for (let j = 0; j < 4; j++) {
-      const t = 0.35 + j * 0.2;
-      const p = bend.map((v, k) => v + (tip[k] - v) * t);
-      const q = [p[0] + rng.g() * 0.8, p[1] + rng.range(0.15, 0.65), p[2] + rng.g() * 0.8];
-      parts.push(branchGeo(p, q, 0.035, 0.009, seed + j));
-      for (let k = 0; k < 4; k++) {
-        const x = q[0] + rng.g() * 0.65, y = q[1] + rng.g() * 0.38, z = q[2] + rng.g() * 0.65;
-        const g = new THREE.IcosahedronGeometry(rng.range(0.18, 0.36), k === 0 ? 1 : 0);
-        g.scale(1.1, rng.range(0.5, 0.8), 1);
-        g.translate(x, y, z);
-        radialNormals(g, x, y - 0.1, z, 0.8);
-        const col = C(rng.pick(flowering ? ['#efc8ce', '#f8e5dc', '#d7a0b1', '#f4d5d8'] : ['#779274', '#a5b68b', '#627f67']));
-        parts.push(colorize(g, (xx, yy, zz) => vary(col, 0.07, xx * 3, yy * 3, zz * 3, seed)));
+  const lean = [rng.g() * 0.35, 0, rng.g() * 0.35];
+  const base = [0, 0, 0];
+  const knee = [lean[0] - 0.15, 0.85, lean[2] + 0.1];
+  const fork = [lean[0] * 1.6 + 0.2, 1.55, lean[2] * 1.6];
+  parts.push(branchGeo(base, knee, 0.3, 0.24, seed));
+  parts.push(branchGeo(knee, fork, 0.24, 0.17, seed + 1));
+  // flowers: tiny pale cups along the twigs; leaves: small flat ovals
+  const blossom = ['#fbf3f0', '#f6dfe3', '#efc6cf', '#fff8f2'];
+  const leafCols = ['#5f7f45', '#6f8f4f', '#557343', '#7d9a58'];
+  const dot = (p, size, col, flat = false) => {
+    const g = new THREE.OctahedronGeometry(size, 0);
+    if (flat) g.scale(1.6, 0.35, 0.9); else g.scale(1, 0.75, 1);
+    g.rotateY(rng.f() * 6);
+    g.translate(p[0], p[1], p[2]);
+    radialNormals(g, p[0], p[1] - 0.05, p[2], 0.8);
+    parts.push(colorize(g, (xx, yy, zz) => vary(C(col), 0.06, xx * 5, yy * 5, zz * 5, seed)));
+  };
+  const scatterAlong = (a, b, n) => {
+    for (let k = 0; k < n; k++) {
+      const t = 0.25 + 0.75 * rng.f();
+      const p = a.map((v, i) => v + (b[i] - v) * t + rng.g() * 0.07);
+      if (flowering) {
+        dot(p, rng.range(0.035, 0.055), rng.pick(blossom));
+        if (rng.f() < 0.25) dot([p[0], p[1] + 0.02, p[2]], 0.012, '#d8b04a'); // stamens
+      } else {
+        dot(p, rng.range(0.05, 0.08), rng.pick(leafCols), true);
+        if (rng.f() < 0.12) dot([p[0], p[1] - 0.07, p[2]], 0.045, rng.pick(['#5a2f4a', '#6b3550', '#7a4a3a']));
       }
+    }
+  };
+  const limbs = 5 + (seed % 2);
+  for (let i = 0; i < limbs; i++) {
+    const a = (i / limbs) * Math.PI * 2 + rng.f() * 0.6;
+    const r = rng.range(1.2, 2.2);
+    // each limb zig-zags in two or three angular segments
+    let prev = fork;
+    let w = 0.12;
+    for (let seg = 0; seg < 3; seg++) {
+      const out = r * (seg + 1) / 3;
+      const p = [fork[0] + Math.cos(a + rng.g() * 0.35) * out, fork[1] + 0.45 + seg * rng.range(0.35, 0.6) + rng.g() * 0.15, fork[2] + Math.sin(a + rng.g() * 0.35) * out];
+      parts.push(branchGeo(prev, p, w, w * 0.62, seed + i * 7 + seg));
+      // thin straight twigs ("whips") rising from each segment
+      for (let k = 0; k < 3; k++) {
+        const tw = [p[0] + rng.g() * 0.35, p[1] + rng.range(0.3, 0.75), p[2] + rng.g() * 0.35];
+        parts.push(branchGeo(p, tw, 0.022, 0.006, seed + i + k));
+        scatterAlong(p, tw, flowering ? 9 : 6);
+      }
+      scatterAlong(prev, p, flowering ? 5 : 3);
+      prev = p;
+      w *= 0.62;
     }
   }
   return merge(parts);

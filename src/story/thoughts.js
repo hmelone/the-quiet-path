@@ -166,6 +166,80 @@ export const THOUGHTS = [
     pass: 'You notice the measuring, and set it down. A bird calls. You didn’t have to earn it.',
     stay: 'You let the question stay a moment, unanswered. Under it, something a little anxious. You let that be here too.',
   },
+
+  // --- moments that change from day to day (v2.7) ---------------------------------------
+  {
+    id: 'lotusChanged', kind: 'kind', event: 'lotus', text: 'Yesterday it was still a bud.',
+    linger: 'You let yourself feel it — how quickly, and how completely, it became something else.', effect: 'pond',
+    pass: 'You let the thought go, the way the petals go.',
+  },
+  {
+    id: 'seedlingsCare', kind: 'kind', event: 'seedlings', text: 'Someone will sit under these trees one day. I won’t know who.',
+    linger: 'You let the thought warm you. Care that doesn’t need to be seen, passed forward.',
+    pass: 'You let it go lightly, and put the watering can back.',
+  },
+  {
+    id: 'mendedBowl', kind: 'kind', event: 'mended', text: 'It’s more beautiful with the crack than it was without it.',
+    linger: 'You stay with that a while. Broken, cared for, still holding tea.',
+    pass: 'You let it go, and carry it with you.',
+  },
+  {
+    id: 'walkedTogether', kind: 'kind', event: 'afterWalk', text: 'I liked walking with everyone. Nobody was in a hurry.',
+    linger: 'You let the ease of it stay in your legs. Each step had arrived somewhere.',
+    pass: 'You smile, and let it go.',
+  },
+  {
+    id: 'snakeJolt', kind: 'heavy', event: 'snake', text: 'My heart jumped. It’s only a snake, minding its own business.',
+    pass: 'You notice the jolt, and let it settle. The snake goes on being a snake.',
+    stay: 'You feel the startle in your chest and let it be there. It fades on its own, like a ripple.',
+  },
+  {
+    id: 'hawkShare', kind: 'kind', event: 'hawk', text: 'I wish I could show someone that hawk.',
+    linger: 'You watch it a while longer for both of you.',
+    pass: 'You let the wish go, and just enjoy the sky.',
+  },
+
+  // --- more quiet thoughts, in the spirit of the place ------------------------------------
+  {
+    id: 'breathing', kind: 'kind', where: ['pond', 'forest', 'orchard', 'hallYard', 'gate', 'valley', 'tower'],
+    text: 'I’m breathing. I didn’t even notice until now.',
+    linger: 'The air comes in, cool. It goes out, warm. You’re still here. That’s all.',
+    pass: 'You let the noticing go, and keep walking.',
+  },
+  {
+    id: 'feet', kind: 'kind', where: ['forest', 'pond', 'orchard', 'valley', 'gate'], when: (c) => c.moving,
+    text: 'The ground is holding me up, every single step.',
+    linger: 'You let your weight sink into each step for a while. The earth doesn’t mind.',
+    pass: 'You let it go, and walk on.',
+  },
+  {
+    id: 'planning', kind: 'heavy', where: ['pond', 'orchard', 'valley', 'hutYard', 'forest'],
+    text: 'I’m already planning what to do tomorrow.',
+    pass: 'You notice the planning, and gently set it down. Tomorrow will come on its own.',
+    stay: 'You let the busy, reaching feeling be there. You don’t have to do anything about it. It quiets a little.',
+  },
+  {
+    id: 'bellAgain', kind: 'kind', where: ['hallYard', 'tower', 'forest'], text: 'I hope I hear the bell again soon.',
+    linger: 'You smile at that. Funny, to look forward to stopping.',
+    pass: 'You let the wish go. Everything is already here.',
+  },
+  {
+    id: 'cook', kind: 'kind', where: ['tea'], when: (c) => c.time <= 2,
+    text: 'Someone has been cooking for all of us since before dawn.',
+    linger: 'Gratitude rises, plain and simple. You let it stay.',
+    pass: 'You let it go, warmly.',
+  },
+  {
+    id: 'judge', kind: 'heavy', where: ['tea', 'pond', 'hallYard'], when: (c) => c.peopleNear > 0,
+    text: 'That person looks like they’re doing it wrong.',
+    pass: 'You notice the judging, and let it pass. Doing it wrong — whatever that would be.',
+    stay: 'You stay with the little hardness of it, without scolding yourself. Under it, something softer: you want to do it right, too.',
+  },
+  {
+    id: 'orchardOld', kind: 'kind', where: ['orchard'], text: 'These plum trees have been bent by a lot of winters.',
+    linger: 'You look at their crooked branches a while. They bloomed anyway.',
+    pass: 'You let it go, and walk under them.',
+  },
 ];
 
 const ZONE_ALIASES = { hall: 'hallYard', hut: 'hutYard' };
@@ -218,7 +292,7 @@ export class ThoughtStream {
     if (this._acc < 1) return;
     this._acc = 0;
     // (debugChance lets automated playtests skip the long natural wait)
-    if (Math.random() > (this.debugChance ?? (rare ? 0.02 : 0.035))) return;
+    if (Math.random() > (this.debugChance ?? (rare ? 0.022 : 0.042))) return;
     const zone = ZONE_ALIASES[ctx.zone] || ctx.zone;
     const t = this.pick(ctx, (x) => !x.event && x.where && x.where.includes(zone));
     if (t) this.show(t, ctx);
@@ -241,7 +315,7 @@ export class ThoughtStream {
     if (this.recent.length > 10) this.recent.shift();
     this.shown[t.id] = (this.shown[t.id] || 0) + 1;
     const rare = this.frequency === 'rare';
-    this.cooldown = rare ? rand(220, 360) : rand(130, 210);
+    this.cooldown = rare ? rand(200, 330) : rand(105, 170);
     if (Math.random() < 0.35) this.cooldown += rand(60, 150); // a longer quiet stretch
     this.onShow(t, ctx);
   }

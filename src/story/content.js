@@ -128,6 +128,120 @@ export const SCRIPTS = {
     api.setFlag('sawOwl');
   },
 
+  async animal_hawk(api) {
+    await api.say({ title: 'A hawk', text: 'High above the valley, a hawk turns slow circles on the warm air, hardly moving its wings. It is completely at home up there. For a moment, so are you, just watching.' });
+    api.setFlag('sawHawk');
+  },
+  async animal_snake(api) {
+    const c = await api.say({
+      title: 'A snake',
+      text: 'A snake lies across the warm stones at the edge of the path, soaking up the sun. Your body notices before you do: a small jolt, a held breath.',
+      choices: [
+        { id: 'breathe', label: 'Breathe, and wish it well' },
+        { id: 'room', label: 'Step back and give it room' },
+        { id: 'watch', label: 'Stay still and simply watch' },
+      ],
+    });
+    const lines = {
+      breathe: 'You breathe in, and out. The jolt softens into something closer to respect. May you be safe, you think. May you be warm. After a while it pours itself, unhurried, into the grass.',
+      room: 'You take a step back. It isn’t a threat — just a life going about its morning, the same as yours. It tastes the air, and slides away into the grass.',
+      watch: 'You stay very still. Its sides rise and fall with its breathing. Patterns like old bark. When it finally moves, it moves like water finding its way downhill.',
+    };
+    await api.say({ title: 'A snake', text: lines[c] });
+    api.setFlag('metSnake');
+    api.snakeLeaves();
+  },
+
+  // --- things that change from day to day ---------------------------------------------
+  async lotusBud(api) {
+    const st = (api.day - 1) % 6;
+    const text = [
+      'A single lotus bud stands above the water on its own stem, closed tight, the tip just blushing pink.',
+      'The lotus bud has begun to open. The outer petals have loosened; paler ones are still folded inside.',
+      'The lotus is fully open today, wide and pink, with a bright yellow seed head at its centre. A small bee is working inside it.',
+      'The lotus is letting its petals go. A few float on the water around the stem like small boats. The seed head stands bare.',
+      'Only the seed pod is left: a green-brown cup of seeds nodding on its stem. It looks finished — and also like a beginning.',
+      'The seed pod has darkened. Beside it, a new bud has pushed up out of the water.',
+    ][st];
+    const seen = api.flag('lotusSeen');
+    await api.say({ title: 'A single lotus', text, note: seen != null && seen !== st ? 'It has changed since you last looked.' : null });
+    api.setFlag('lotusSeen', st);
+    if (seen != null && seen !== st) api.thoughtMoment('lotus');
+  },
+  async seedlings(api) {
+    const cond = { day: api.day, flags: { seedWater: api.flag('seedWater') || [] } };
+    const st = Math.min(4, Math.floor((cond.day - 1) / 2) + cond.flags.seedWater.length);
+    const text = [
+      'Three young plum seedlings stand in a row, each tied to a bamboo stake, hardly taller than your hand. A watering can waits beside them, and a card: “Please water if the soil is dry.”',
+      'The plum seedlings are a little taller than before. Each has opened a new pair of small, serrated leaves.',
+      'The seedlings are growing well. Their stems have darkened and stiffened a little, and they lean toward the light.',
+      'The seedlings are nearly knee-high now, their leaves glossy. Someone has loosened the ties on the stakes so they can grow.',
+      'One of the seedlings has put out a few white blossoms — too early, perhaps, and much too small. But there they are.',
+    ][st];
+    const today = (api.flag('seedWater') || []).includes(api.day);
+    if (today || api.weather === 'rain') {
+      await api.say({ title: 'Plum seedlings', text, note: today ? 'You watered them today. The soil is still dark around the roots.' : 'The rain is watering them today.' });
+      return;
+    }
+    const c = await api.say({ title: 'Plum seedlings', text, choices: [{ id: 'water', label: 'Water the seedlings' }, { id: 'leave', label: 'Leave them for now' }] });
+    if (c === 'water') {
+      api.setFlag('seedWater', [...(api.flag('seedWater') || []), api.day]);
+      await api.say({ title: 'Plum seedlings', text: 'You fill the can from the rain barrel and water each one slowly, around the roots, not on the leaves. The soil darkens. Nobody is watching. It doesn’t matter.', note: 'Working with care, here, is a practice too.' });
+      api.refresh();
+      api.thoughtMoment('seedlings');
+    }
+  },
+  async pebbleBag(api) {
+    for (;;) {
+      const c = await api.say({
+        title: 'A small cloth bag',
+        text: 'A small blue cloth bag lies on the bench, tied with a yellow cord. Inside are four smooth pebbles, and a card in a child’s big handwriting: “flower · mountain · water · space”.',
+        note: 'Children here sometimes practise with four pebbles: to feel fresh as a flower, solid as a mountain, still as clear water, and free as open space.',
+        choices: [
+          { id: 'hold', label: 'Hold the pebbles a moment' },
+          { id: 'return', label: 'Take it to the tea house, where its owner might look' },
+          { id: 'leave', label: 'Leave it here for whoever comes back for it' },
+        ],
+      });
+      if (c === 'hold') {
+        await api.say({ title: 'Four pebbles', text: 'The first pebble. Breathing in, you think of a flower — fresh, open. Breathing out.' });
+        await api.say({ title: 'Four pebbles', text: 'The second. A mountain — solid, steady, not going anywhere.' });
+        await api.say({ title: 'Four pebbles', text: 'The third. Still water — calm enough to reflect the sky.' });
+        await api.say({ title: 'Four pebbles', text: 'The fourth. Space — room inside you, room around you. You put them back in the bag, one by one.' });
+        continue;
+      }
+      api.setFlag('pebbles', c === 'return' ? 'returned' : 'left');
+      api.setFlag('pebbleDay', api.day);
+      await api.say({ title: 'A small cloth bag', text: c === 'return'
+        ? 'You carry the bag carefully down to the tea house and hang it on the hook by the door, where someone will see it.'
+        : 'You leave the bag where it is, cord neatly tied. Whoever left it will know where to look.' });
+      api.refresh();
+      return;
+    }
+  },
+  async pebble(api) {
+    const c = await api.say({
+      title: 'A pebble',
+      text: 'The bag is gone from the bench. In the middle of the seat, a single smooth grey pebble has been left behind — on purpose, it seems. It is cool in your palm.',
+      choices: [{ id: 'keep', label: 'Keep it in your pocket' }, { id: 'leave', label: 'Leave it for the next person' }],
+    });
+    if (c === 'keep') {
+      api.setFlag('keptPebble');
+      await api.say({ title: 'A pebble', text: 'You slip it into your pocket. Every so often, your fingers find it.' });
+    } else {
+      await api.say({ title: 'A pebble', text: 'You set it back exactly where it was. A small gift, passed along.' });
+    }
+    api.refresh();
+  },
+  async mendedBowl(api) {
+    await api.say({
+      title: 'The tea bowl',
+      text: 'The broken tea bowl is back on the table. The piece has been set into its place, and the crack filled with a thin line of lacquer that catches the light. It isn’t hidden. It’s part of the bowl now.',
+      note: api.flag('bowl') === 'left' ? 'Someone found it, after all, and took the time.' : null,
+    });
+    if (!api.flag('sawMended')) { api.setFlag('sawMended'); api.thoughtMoment('mended'); }
+  },
+
   // --- pond --------------------------------------------------------------------------
   async bridge(api) {
     await api.say({ text: 'From the top of the little bridge you can see the whole pond: lotus leaves standing above the water, the hall above, the orchard below. The planks creak and settle under your feet.' });
@@ -339,6 +453,10 @@ export async function onEnterZone(zone, api) {
       api.whisper('The low wall is bare now. Only a small pale chip remains between two stones.');
       api.refresh();
     }
+  }
+  if (zone === 'tea' && api.flag('pebbles') === 'returned' && api.day > (api.flag('pebbleDay') ?? 99) && !api.flag('sawDrawing')) {
+    api.setFlag('sawDrawing');
+    api.whisper('On the tea house door, a child’s drawing has been pinned up: a blue bag, four pebbles, and a large, wobbly heart.', 8000);
   }
   if (zone === 'hall' && (t === 0 || t === 3)) {
     api.whisper('People are sitting in silence. A cushion near the door is free.', 6000);

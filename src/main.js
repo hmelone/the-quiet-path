@@ -226,7 +226,9 @@ class Game {
       get weather() { return game.s.weather; },
       get isDark() { return game.isDark; },
       audio,
-      refresh: () => g.world.placeBowl(game.s.flags),
+      refresh: () => g.world.refresh(),
+      snakeLeaves: () => g.world.animals.snakeLeaves(),
+      thoughtMoment: (type) => g.thoughts.event(type, 2),
       passTime: (t, bell) => g.passTime(t, bell),
       sleep: () => g.sleep(),
       sit: (kind) => g.sit(kind),
@@ -261,6 +263,7 @@ class Game {
   use(it) {
     if (this.mode !== 'explore' || this.dialog.open) return;
     audio.init();
+    if (it.join) { this.joinWalk(); return; }
     if (it.kind === 'go') {
       if (this.player.walkTo(it.to[0], it.to[1], null, it.faceTo)) {
         this.walkingTo = it.toName;
@@ -282,8 +285,42 @@ class Game {
     this.runScript(it.script);
   }
 
+  /**
+   * Join the morning walking meditation: walk to the loop around the pond,
+   * then go round once at the line's slow pace. Stop or Esc leaves it.
+   */
+  joinWalk() {
+    const loop = this.world.people.loop;
+    const px = this.player;
+    let bi = 0, bd = Infinity;
+    loop.forEach(([x, z], i) => { const d = Math.hypot(x - px.x, z - px.z); if (d < bd) { bd = d; bi = i; } });
+    const around = [];
+    const n = loop.length - 1; // last point repeats the first
+    for (let k = 1; k <= n; k++) around.push(loop[(bi + k) % n]);
+    const startLoop = () => {
+      px.route = around.slice();
+      px.speed = 0.38;
+      this.walkMeditation = true;
+      this.walkingTo = 'the walking meditation';
+      px.onArrive = () => this.endWalkMeditation(true);
+      this.hud.whisper('You fall in at the end of the line. Slowly. One breath, a few steps. Nobody looks back.', 6500);
+    };
+    if (bd < 1.5) startLoop();
+    else if (px.walkTo(loop[bi][0], loop[bi][1], startLoop)) this.walkingTo = 'the walking line';
+  }
+
+  endWalkMeditation(completed) {
+    if (!this.walkMeditation) return;
+    this.walkMeditation = false;
+    this.player.speed = 1.45;
+    game.setFlag('joinedWalk', (game.flag('joinedWalk') || 0) + 1);
+    if (completed) this.hud.whisper('The line comes back to where it began. You stand still a moment, and let it go on without you.');
+    this.thoughts.event('afterWalk', 6);
+  }
+
   /** Stop walking (Esc or the Stop button). */
   stopWalking() {
+    this.endWalkMeditation(false);
     this.player.stop();
     this.walkingTo = null;
     this.marker.material.opacity = 0;
@@ -449,6 +486,7 @@ class Game {
     // tapping walks you to that spot only — never further than a short stroll
     const MAX = 35;
     if (d > MAX) { tx = this.player.x + ((tx - this.player.x) / d) * MAX; tz = this.player.z + ((tz - this.player.z) / d) * MAX; }
+    if (this.walkMeditation) this.endWalkMeditation(false);
     if (this.player.walkTo(tx, tz)) { this.walkingTo = 'there'; this.showMarker(tx, tz); }
   }
 
@@ -763,6 +801,10 @@ class Game {
 
     this.updateThoughts(dt);
 
+    // leaving the walking meditation any other way (a tap, the keys) ends it gently
+    if (this.walkMeditation && !px.route) this.endWalkMeditation(false);
+    if (this.walkMeditation && px.route && px.speed > 0.5) this.endWalkMeditation(false);
+
     // the "walking…" banner with a Stop button
     const walking = !!px.route && this.mode === 'explore';
     if (!walking && this.walkingTo) this.walkingTo = null;
@@ -794,6 +836,19 @@ class Game {
     const alone = m.peopleNear === 0 && zone !== 'tea' && px.moving;
     if (alone && m.hienAt != null && this.t - m.hienAt > 60 && !m.sentAlone.hien) { m.sentAlone.hien = true; this.thoughts.event('aloneAfterHien', 0); }
     if (alone && m.noteAt != null && this.t - m.noteAt > 45 && !m.sentAlone.note) { m.sentAlone.note = true; this.thoughts.event('aloneAfterNote', 0); }
+    // rare visitors: a startle at the snake, a wish to share the hawk; their voices
+    for (const a of this.world.animals.list) {
+      if (!a.obj.visible) continue;
+      const d = Math.hypot(a.obj.position.x - px.x, a.obj.position.z - px.z);
+      if (a.kind === 'snake' && d < 7 && !a.noticed) { a.noticed = true; this.thoughts.event('snake', 1); }
+      if (a.kind === 'hawk') {
+        a.seenFor = (a.seenFor || 0) + dt;
+        if (a.seenFor > 25 && !a.noticed && !this.zone?.interior) { a.noticed = true; this.thoughts.event('hawk', 1); }
+        a.cry = (a.cry ?? 20) - dt;
+        if (a.cry <= 0) { a.cry = 35 + Math.random() * 50; audio.hawk?.(); }
+      }
+      if (a.kind === 'owlFly' && !a.hooted && Math.abs(a.obj.position.x) < 40) { a.hooted = true; audio.owlHoot?.(); }
+    }
     this.thoughts.update(dt, {
       canShow: exploring && !this.thoughtView.visible,
       zone, time: game.s.time, weather: game.s.weather, flags: game.s.flags,
@@ -834,14 +889,14 @@ class Game {
     const v = new THREE.Vector3();
     const items = [];
     const near = [];
-    const animalIcon = { deer: 1.9, fox: 1.0, rabbit: 0.7, owl: 0.6 };
-    const animalLabel = { deer: 'Deer', fox: 'A fox', rabbit: 'A rabbit', owl: 'An owl' };
+    const animalIcon = { deer: 1.9, fox: 1.0, rabbit: 0.7, owl: 0.6, hawk: 0, snake: 0.45 };
+    const animalLabel = { deer: 'Deer', fox: 'A fox', rabbit: 'A rabbit', owl: 'An owl', hawk: 'A hawk, circling', snake: 'A snake on the path' };
     const animalItems = [];
     for (const a of this.world.animals.list) {
       if (!a.lookable || !a.obj.visible) continue;
-      if (Math.hypot(a.obj.position.x - px.x, a.obj.position.z - px.z) > 22) continue;
+      if (Math.hypot(a.obj.position.x - px.x, a.obj.position.z - px.z) > (a.kind === 'hawk' ? 90 : 22)) continue;
       if (animalItems.some((i) => i.akind === a.kind)) continue; // one icon per kind
-      animalItems.push({ id: `animal-${a.kind}`, akind: a.kind, kind: 'look', label: animalLabel[a.kind], dynamic: () => a.obj, iconY: animalIcon[a.kind], script: `animal_${a.kind}` });
+      animalItems.push({ id: `animal-${a.kind}`, akind: a.kind, kind: 'look', label: animalLabel[a.kind], dynamic: () => a.obj, iconY: animalIcon[a.kind], script: `animal_${a.kind}`, range: a.kind === 'hawk' ? 90 : undefined });
     }
     this.extraItems = this.extraItems.filter((x) => !x.until || x.until > this.t);
     for (const it of [...this.world.interactables, ...animalItems, ...this.extraItems]) {
