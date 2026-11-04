@@ -70,6 +70,7 @@ export function plumTreeGeo(seed = 1, flowering = true) {
   const fork = [lean[0] * 1.6 + 0.2, 1.55, lean[2] * 1.6];
   parts.push(branchGeo(base, knee, 0.3, 0.24, seed));
   parts.push(branchGeo(knee, fork, 0.24, 0.17, seed + 1));
+  for (const [j, r] of [[knee, 0.25], [fork, 0.18]]) parts.push(colorize(new THREE.SphereGeometry(r, 7, 5).translate(j[0], j[1], j[2]), (xx, yy, zz) => vary(C('#4f3d38'), 0.06, xx, yy, zz, seed)));
   // flowers: tiny pale cups along the twigs; leaves: small flat ovals
   const blossom = ['#fbf3f0', '#f6dfe3', '#efc6cf', '#fff8f2'];
   const leafCols = ['#5f7f45', '#6f8f4f', '#557343', '#7d9a58'];
@@ -89,8 +90,9 @@ export function plumTreeGeo(seed = 1, flowering = true) {
         dot(p, rng.range(0.035, 0.055), rng.pick(blossom));
         if (rng.f() < 0.25) dot([p[0], p[1] + 0.02, p[2]], 0.012, '#d8b04a'); // stamens
       } else {
-        dot(p, rng.range(0.05, 0.08), rng.pick(leafCols), true);
-        if (rng.f() < 0.12) dot([p[0], p[1] - 0.07, p[2]], 0.045, rng.pick(['#5a2f4a', '#6b3550', '#7a4a3a']));
+        dot(p, rng.range(0.055, 0.085), rng.pick(leafCols), true);
+        // young plums: small, hard and green in late spring; one or two starting to blush
+        if (rng.f() < 0.16) dot([p[0], p[1] - 0.08, p[2]], 0.038, rng.f() < 0.15 ? '#b8a04a' : rng.pick(['#8fae4a', '#9cb85a', '#7f9c42']));
       }
     }
   };
@@ -109,9 +111,12 @@ export function plumTreeGeo(seed = 1, flowering = true) {
       for (let k = 0; k < 3; k++) {
         const tw = [p[0] + rng.g() * 0.35, p[1] + rng.range(0.3, 0.75), p[2] + rng.g() * 0.35];
         parts.push(branchGeo(p, tw, 0.022, 0.006, seed + i + k));
-        scatterAlong(p, tw, flowering ? 9 : 6);
+        scatterAlong(p, tw, flowering ? 9 : 11);
       }
-      scatterAlong(prev, p, flowering ? 5 : 3);
+      scatterAlong(prev, p, flowering ? 5 : 6);
+      // a rounded knuckle where branch segments meet (no blocky joints)
+      const kn = new THREE.SphereGeometry(w * 0.7, 6, 5).translate(p[0], p[1], p[2]);
+      parts.push(colorize(kn, (xx, yy, zz) => vary(C('#4f3d38'), 0.06, xx, yy, zz, seed)));
       prev = p;
       w *= 0.62;
     }
@@ -363,7 +368,8 @@ export function buildFoliage(tier) {
       obstacles.push({ x, z, r: 0.45 });
     }
   }
-  group.add(instanced(plumTreeGeo(7), broadMat, plumItems.filter((_, i) => i % 3 !== 0)));
+  // late spring: the blossom is over; plums are in leaf with small green fruit
+  group.add(instanced(plumTreeGeo(7, false), broadMat, plumItems.filter((_, i) => i % 3 !== 0)));
   group.add(instanced(plumTreeGeo(11, false), broadMat, plumItems.filter((_, i) => i % 3 === 0)));
 
   // Landmark trees frame the walk without closing the view to the pond and hall.
@@ -372,7 +378,7 @@ export function buildFoliage(tier) {
     it.y = heightAt(it.x, it.z);
     obstacles.push({ x: it.x, z: it.z, r: 0.55 });
   }
-  group.add(instanced(plumTreeGeo(17), paint({ sway: 0.06, swayHeight: 5 }), heroPlums));
+  group.add(instanced(plumTreeGeo(17, false), paint({ sway: 0.06, swayHeight: 5 }), heroPlums));
   group.userData.plums = plumItems;
 
   // bushes (azaleas near the hall and pond, some with flowers)
