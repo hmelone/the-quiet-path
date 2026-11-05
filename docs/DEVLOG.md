@@ -498,3 +498,13 @@ In this iteration I built a Dharma Library with four AudioDharma talks: a listen
   - the thought fix on an emulated phone;
   - the hall doorway at night (clear, no band, no floating panels) and the back wall (framed windows behind the altar);
   - each of the four cushions: walking there, sitting at the cushion facing the altar (yaw 0), nobody else already sitting there, and standing up.
+
+### Follow-up: the talks are back, on every cushion
+I misread "remove the Dharma library": you meant the library corner, not the talks. The talks are restored as they were in #13, now on all four cushions:
+- sitting on any cushion in the hall opens the Dharma talks, with no autoplay;
+- *Sit in silence* gives quiet sitting, and *Choose a talk* brings the talks back;
+- the recordings, start timestamps, attribution and licences (About, `CREDITS.md`) are back.
+
+The bookcase corner stays removed. The doorway fix and the four cushions are unchanged.
+
+Rechecked on the production build: all four talks start at their timestamps and play to the end; *Sit in silence* and *Choose a talk* work; the window cushion offers the talks too; the emulated phone also passed.
