@@ -411,3 +411,50 @@ The playtest itself needed two fixes along the way; neither was a game bug. The 
 
 ### Not yet tested
 Real phones; how the new moments feel across several in-game days; whether the hawk cry and owl hoots sound natural.
+
+## v2.8: A Plum Village hall, a real kitchen
+*Date: 2026-11-05*
+
+### Your playtest notes
+- Make the Buddha statue look more like the Buddha.
+- In Plum Village the sangha sits facing the front of the hall, where the Buddha is, not the wall. The meditators, and the player when sitting, should face that way.
+- The altar flowers didn't look realistic.
+- The meditation hall still looked very Japanese.
+- Walking into the hut, the roof looked detached from the walls.
+- Could the kitchen door open so you can peek in at people preparing vegetarian food before breakfast, lunch and dinner?
+
+### What changed
+- **The Buddha on the altar** is now sculpted as a recognisable seated Buddha:
+  - in meditation, hands resting in the lap, on a lotus pedestal with two rings of petals;
+  - curled hair with the raised crown, long earlobes, a calm face and a halo, in soft gold.
+- **Sitting faces the front.** Cushions are in rows across the hall with a centre aisle, all facing the altar. The people sitting at dawn and in the evening face the Buddha. When you sit, you're placed on a cushion near the door facing the altar too, and standing up puts you back in the aisle.
+- **Altar flowers:** two celadon vases of white and yellow chrysanthemums, with real stems, leaves and layered petals. There's also a pair of candles in bronze holders and a small plate of oranges.
+- **The hall restyled** after Vietnamese temple halls and the French farm setting of the original community, instead of a Japanese look:
+  - warm ochre walls with a painted band at the base;
+  - round, red-brown lacquered columns on stone bases;
+  - lacquered beams and brackets on the veranda;
+  - panelled double doors folded back beside the doorway;
+  - blue-grey wooden shutters at the windows;
+  - a clay-tile roof;
+  - exposed beams inside.
+
+  The gate and bell tower now share the clay-tile roofs.
+- **Follow-up: the roof shape.** The first try still looked Japanese, and the playtest pinned down why: the corners pointed up and the middle of each edge sagged. The old roof builder curved every eave upward toward the corners. The hall, gate and tower now have **straight eaves**. The hall roof is a plain, steeper hip roof of clay tiles with a narrower side overhang, straight ridge and hip tiles, and a simple eave board, like the farm buildings of the French countryside. The curled ridge ends and the lotus-bud finial are gone.
+- **The hut roof rests on the walls.** The roof was hung at the wall tops by its eaves, so its slope left a gap of about 25 cm above the long walls. Roofs are now lowered by their overhang, and the gable ends match. There's also a wall plate along the eaves and beams under the ceiling. The tea house roof got the same fix.
+- **A real kitchen in the tea house.** The farmhouse is hollow now, with:
+  - limewashed walls and a flagstone floor;
+  - a long counter with a stone sink;
+  - shelves of stacked bowls;
+  - a brick stove with a rice pot and a soup pot under a hood;
+  - a work table with carrots, tofu, greens and mushrooms on cutting boards;
+  - rice sacks and squash.
+
+  **Before breakfast (dawn), lunch (morning) and dinner (afternoon)** the kitchen door swings open, the kitchen is lit, steam rises from the pots, and three cooks are at work: stirring at the stove, chopping at the table, and washing at the sink. A small sign says *Cooks in silence*. *Kitchen door* walks you to the step and turns you to look in, and the text follows the meal being prepared. In the evening the door is closed and you hear washing-up; at night it's quiet. You look in from the doorway, but you can't walk inside.
+
+### Checks
+- `npm run build` passes.
+- In headless Chromium:
+  - the people sitting at dawn all face the altar (yaw 0);
+  - the player sits on the cushion facing the altar and returns to the aisle when standing;
+  - *Kitchen door* walks to the step, turns to face in, and opens the "Before lunch" text with three cooks inside;
+  - screenshots checked of the altar, the hall from outside, the hut inside and outside, and the kitchen.

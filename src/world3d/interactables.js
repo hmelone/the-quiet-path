@@ -32,7 +32,7 @@ export function buildInteractables(built, people) {
     { id: 'towerBench', kind: 'sit', label: 'Bench with a view', ...at(-12, -33, 1.0), stand: [-11.5, -32], script: 'sitTower' },
     // the hall
     { id: 'hallDoor', kind: 'go', label: 'Enter the meditation hall', x: H.x, z: H.z + H.d / 2 + 0.5, y: hallFloor + 2.2, to: [H.x, H.z + 1.5], toName: 'inside the hall', faceTo: [H.x, H.z - 4] },
-    { id: 'cushion', kind: 'sit', label: 'Sit on a cushion', x: H.x - 2.6, z: H.z + 2.8, y: hallFloor + 0.7, stand: [H.x - 1.6, H.z + 2.8], script: 'sitHall' },
+    { id: 'cushion', kind: 'sit', label: 'Sit on a cushion', x: H.x - 1.5, z: H.z + 2.4, y: hallFloor + 0.7, stand: [H.x, H.z + 2.4], script: 'sitHall' },
     { id: 'altar', kind: 'look', label: 'The altar', x: H.x, z: H.z - H.d / 2 + 0.8, y: hallFloor + 1.5, stand: [H.x, H.z - 1.5], script: 'altar' },
     { id: 'bowlBell', kind: 'look', label: 'The bell bowl', x: H.x - 2.2, z: H.z - H.d / 2 + 1.2, y: hallFloor + 0.8, stand: [H.x - 1.6, H.z - 1.4], script: 'bellBowl' },
     { id: 'callig', kind: 'look', label: 'Brushed words', x: H.x - H.w / 2 + 0.2, z: H.z, y: hallFloor + 2.75, stand: [H.x - 3, H.z], script: 'calligraphy' },
@@ -53,7 +53,7 @@ export function buildInteractables(built, people) {
     { id: 'signPond3', kind: 'go', label: 'Back up to the hall', ...at(-2.8, 24, 1.4), to: [3, -6], toName: 'the meditation hall' },
     // the tea house and orchard
     { id: 'bowl', kind: 'look', label: 'Something on the low wall', x: tea.wall.x, z: tea.wall.z, y: groundAt(tea.wall.x, tea.wall.z) + 0.9, stand: [tea.wall.x + 1.4, tea.wall.z + 0.6], script: 'bowl', visible: (c) => !c.flags.bowl },
-    { id: 'kitchen', kind: 'look', label: 'Kitchen door', x: tea.door.x, z: tea.door.z, y: groundAt(tea.door.x, tea.door.z) + 1.8, stand: [tea.door.x, tea.door.z + 1.2], script: 'kitchen' },
+    { id: 'kitchen', kind: 'look', label: 'Kitchen door', x: tea.door.x, z: tea.door.z, y: groundAt(tea.door.x, tea.door.z) + 1.8, stand: [tea.peek.x, tea.peek.z], peek: tea.peek.yaw, script: 'kitchen' },
     { id: 'teaTable', kind: 'sit', label: 'Sit for tea', x: tea.table.x, z: tea.table.z, y: groundAt(tea.table.x, tea.table.z) + 1.1, stand: [tea.table.x + 0.2, tea.table.z + 1.1], script: 'tea' },
     { id: 'hien', kind: 'talk', label: 'Sister Hien', dynamic: () => people.hien?.fig, script: 'hien', visible: () => !!people.hien },
     { id: 'plum', kind: 'look', label: 'Plum trees', ...at(-27, 31, 2.2), stand: [-25, 33.2], script: 'plum' },

@@ -137,6 +137,8 @@ export class World {
     this.engine.applyAtmosphere(this.atm, timeName, cond.weather, interior);
     updateGlow(this.built, this.atm, timeName);
     updateWater(this.water, this.atm, this.engine.sunDir, this.t, 1);
+    // the cooks are at work before breakfast, lunch and dinner
+    this.built.tea.setCooking(cond.time <= 2);
     this.people.arrange(cond.time, cond.weather);
     this.animals.arrange(cond.time, cond.weather, cond.day);
     const mm = this.mist.userData.mat;
@@ -191,6 +193,7 @@ export class World {
     this.t += dt;
     const e = this.engine;
     e.tick(this.t);
+    this.built.tea.update(dt, this.t);
     this.people.update(dt, this.t, this.pause);
     this.animals.update(dt, this.t, player, this.pause);
     updateWater(this.water, this.atm, e.sunDir, this.t, 1);
