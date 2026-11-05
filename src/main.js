@@ -25,7 +25,6 @@ import { openMenu, openSettings, openAlbum, openAbout, titleScreen, confirmBox }
 import { SCRIPTS, PROMPTS, onEnterZone, dayIntro } from './story/content.js';
 import { ThoughtStream } from './story/thoughts.js';
 import { ThoughtView } from './ui/thought.js';
-import { openLibrary } from './ui/library.js';
 
 const NIGHT_FADE = '#0e1220';
 
@@ -286,11 +285,13 @@ class Game {
       return;
     }
     if (it.kind === 'sit' && it.stand && Math.hypot(it.stand[0] - this.player.x, it.stand[1] - this.player.z) > 1.2) {
+      this.seatAt = it.seat || null;
       const ok = this.player.walkTo(it.stand[0], it.stand[1], () => { this.walkingTo = null; this.runScript(it.script); });
       if (ok) { this.walkingTo = it.label.toLowerCase(); return; }
     }
     this.player.stop();
     this.walkingTo = null;
+    if (it.seat) this.seatAt = it.seat;
     if (it.dynamic) {
       // the person turns to face you
       const f = it.dynamic();
@@ -352,7 +353,6 @@ class Game {
 
   bellOfMindfulness(source) {
     if (this.mode === 'title' || this.mode === 'loading') return;
-    if (this.mode === 'listen') { this.bells.reset(); return; } // don't ring over a talk
     const cap = source === 'you' ? '[you invite the great bell; its sound spreads across the valley]' : source === 'time' ? '[the great bell sounds from the tower]' : '[the bell of mindfulness sounds from the tower]';
     // a soft "waking" touch first, then the full sound
     audio.rin('');
@@ -451,30 +451,15 @@ class Game {
     const before = { x: px.x, z: px.z };
     if (kind === 'hall') {
       // settle onto a cushion in the rows, facing the altar like everyone else
-      const c = this.world.built.hall.playerCushion;
+      const pc = this.world.built.hall.playerCushion;
+      const c = this.seatAt || { ...pc, z: pc.z + 0.1 }; // the cushion you chose
+      this.seatAt = null;
       px.stop();
-      Object.assign(px, { x: c.x, z: c.z + 0.1, yaw: c.rot, pitch: -0.06 });
+      Object.assign(px, { x: c.x, z: c.z, yaw: c.rot, pitch: -0.06 });
       px.lookTarget = null;
     }
     px.seated = true;
-    let how;
-    if (kind === 'hall') {
-      // On a hall cushion the Dharma talks are offered first; you can choose
-      // one, or just sit in silence (and come back to the talks at any time).
-      for (;;) {
-        this.mode = 'listen'; // the bell of mindfulness waits during a talk
-        audio.setDuck(0.12);
-        audio.setAmbienceDuck(0.45);
-        this.bells.reset();
-        const choice = await openLibrary(this.ui);
-        audio.setAmbienceDuck(1);
-        audio.setDuck(0.4);
-        this.mode = 'sit';
-        if (choice === 'stand') { how = 'stand'; break; }
-        how = await this.sitting.start(kind, { talks: true });
-        if (how !== 'talks') break;
-      }
-    } else how = await this.sitting.start(kind);
+    const how = await this.sitting.start(kind);
     px.seated = false;
     if (kind === 'hall') Object.assign(px, before); // stand up into the aisle
     audio.setDuck(1);
@@ -947,7 +932,7 @@ class Game {
       const d = Math.hypot(p.x - px.x, p.z - px.z);
       if (d > (it.range || (it.akind ? 22 : 16))) continue;
       // things inside a building only show from inside (and vice versa), except doorways
-      const itInside = ['cushion', 'altar', 'bowlBell', 'callig', 'futon', 'desk', 'smallBell', 'note', 'darkroom'].includes(it.id);
+      const itInside = ['cushion', 'cushion2', 'cushion3', 'cushion4', 'altar', 'bowlBell', 'callig', 'futon', 'desk', 'smallBell', 'note', 'darkroom'].includes(it.id);
       const isDoor = it.id === 'hallDoor' || it.id === 'hutDoor';
       if (isDoor ? insideNow : itInside !== insideNow) continue;
       if (d < 7 || (it.range && d < it.range)) near.push({ it, d: it.range ? Math.min(d, 6.9) : d });

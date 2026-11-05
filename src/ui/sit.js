@@ -15,8 +15,8 @@ export class Sitting {
     this.active = false;
   }
 
-  /** Resolves 'stand', 'bell' (stay until the next bell) or 'talks' (choose a talk). */
-  start(kind, { talks = false } = {}) {
+  /** Resolves 'stand' or 'bell' (stay until the next bell). */
+  start(kind) {
     return new Promise((resolve) => {
       this.active = true;
       this.audio.rin();
@@ -33,7 +33,6 @@ export class Sitting {
       const controls = h('div', { class: 'sit-controls' },
         h('button', { onclick: () => end('stand') }, 'Stand up'),
         h('button', { onclick: () => end('bell') }, 'Sit until the next bell'),
-        talks ? h('button', { onclick: () => end('talks') }, 'Choose a talk') : null,
       );
       const el = h('div', { class: 'sit-layer', role: 'region', 'aria-label': 'Sitting' }, breath, thought, controls);
       this.root.append(el);
