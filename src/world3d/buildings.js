@@ -521,6 +521,29 @@ function buildHall() {
   // altar
   k.box(3.2, 0.5, 0.9, 0, F, -D / 2 + 0.8, WOOD_D);
   k.box(3.6, 0.08, 1.1, 0, F + 0.5, -D / 2 + 0.8, WOOD);
+  // the Dharma library: a low cabinet of books and recorded talks by the right wall
+  const LX = W / 2 - 0.4, LZ = -2.9;
+  // an open frame: back, ends, a plinth, one shelf and the top, so the books show
+  k.box(0.04, 0.92, 1.5, LX + 0.23, F, LZ, WOOD_D);
+  for (const e of [-1, 1]) k.box(0.5, 0.92, 0.05, LX, F, LZ + e * 0.725, WOOD_D);
+  k.box(0.5, 0.07, 1.5, LX, F, LZ, WOOD_D);
+  k.box(0.48, 0.035, 1.42, LX, F + 0.46, LZ, WOOD_D);
+  k.box(0.56, 0.05, 1.56, LX, F + 0.92, LZ, WOOD, { collide: true });
+  for (const y of [0.07, 0.495]) {
+    let z = LZ - 0.66;
+    for (let i = 0; z < LZ + 0.6; i++) {
+      const w = 0.035 + ((i * 37 + y * 100) % 5) * 0.008, hgt = 0.24 + ((i * 53) % 7) * 0.015;
+      const tilt = i % 9 === 8 ? 0.25 : 0; // now and then a book leans
+      k.box(0.22, hgt, w, LX + 0.05, F + y, z + w / 2, ['#8a5a3a', '#5f6f5a', '#a8885a', '#6b4a3a', '#c2b28c', '#4f5a66'][(i + (y > 0.2 ? 3 : 0)) % 6], { rotY: tilt });
+      z += w + 0.008;
+    }
+  }
+  // on top: a small wooden player with a cloth speaker, and a dish of pebbles
+  k.box(0.26, 0.12, 0.34, LX, F + 0.97, LZ - 0.35, '#7a5a3e');
+  k.box(0.02, 0.08, 0.22, LX - 0.13, F + 0.99, LZ - 0.35, '#c9b48a');
+  k.cyl(0.03, 0.03, 0.02, LX - 0.02, F + 1.09, LZ - 0.28, '#3a2c22', 10);
+  k.cyl(0.11, 0.08, 0.035, LX, F + 0.97, LZ + 0.35, '#d8cdb7', 14);
+  for (const [dx, dz] of [[0.02, 0.32], [-0.03, 0.37], [0.03, 0.39]]) k.geo(new THREE.SphereGeometry(0.03, 8, 5).scale(1, 0.6, 1).translate(LX + dx, F + 1.0, LZ + dz), '#8d8a80');
   const g = new THREE.Group();
   g.add(k.mesh());
 
@@ -606,6 +629,19 @@ function buildHall() {
   bowlBell.position.y += 0.1;
   g.add(bellCushion);
 
+  // the library's sign and its own cushion, turned toward the altar
+  const libSign = board('Dharma talks', 0.62, 0.2, { w: 420, h: 136 });
+  libSign.position.set(LX + 0.19, F + 1.08, LZ); // standing on the cabinet, against the wall
+  libSign.rotation.set(0, -Math.PI / 2, 0);
+  libSign.rotateX(-0.12);
+  g.add(libSign);
+  const LCX = W / 2 - 1.15, LCZ = LZ + 0.15, LYAW = Math.atan2(LCX, -(-D / 2 + 0.8) + LCZ);
+  const libCushion = new THREE.Mesh(cushionGeo(), paint({}));
+  libCushion.position.set(LCX, F, LCZ);
+  libCushion.rotation.y = Math.PI + LYAW;
+  libCushion.receiveShadow = true;
+  g.add(libCushion);
+
   // calligraphy boards on the inner walls
   const phrases = ['Just this breath', 'Each step is enough', 'Be still, and listen'];
   phrases.forEach((t, i) => {
@@ -631,6 +667,8 @@ function buildHall() {
     group: g, colliders: worldColliders(k.colliders, B.x, B.z, B.rot), light,
     cushionSpots: g.userData.cushionSpots.map(([x, z, r]) => ({ x: B.x + x, z: B.z + z, rot: r, y: p.h + F })),
     playerCushion: { x: B.x - 1.5, z: B.z + 2.4, rot: 0, y: p.h + F },
+    libraryCushion: { x: B.x + LCX, z: B.z + LCZ, rot: LYAW, y: p.h + F },
+    library: { x: B.x + LX, z: B.z + LZ },
     altar: { x: B.x, z: B.z - D / 2 + 0.8 }, bowlBell: { x: B.x - 2.2, z: B.z - D / 2 + 1.2 },
   };
 }

@@ -13,11 +13,17 @@ export class ThoughtView {
     this.el = h('div', { class: 'thought-line', role: 'status', 'aria-live': 'polite', hidden: true }, this.text, this.buttons);
     root.append(this.el);
     this.current = null;
-    // pause the fade while the pointer or keyboard focus is on it
-    this.el.addEventListener('pointerenter', () => { this.hold = true; });
-    this.el.addEventListener('pointerleave', () => { this.hold = false; });
-    this.el.addEventListener('focusin', () => { this.hold = true; });
-    this.el.addEventListener('focusout', () => { this.hold = false; });
+    // Pause the fade while a mouse rests on it or keyboard focus is in it.
+    // Touch never holds it: a tap has no "leave", which once left a thought
+    // stuck on screen after Linger was tapped on a phone.
+    this.mouseOver = false;
+    this.el.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') this.mouseOver = true; });
+    this.el.addEventListener('pointerleave', () => { this.mouseOver = false; });
+  }
+
+  /** Focus is checked live, because a focused button removed from the page sends no focusout. */
+  get hold() {
+    return this.mouseOver || (this._phase === 'thought' && this.el.contains(document.activeElement));
   }
 
   get visible() { return !this.el.hidden; }
@@ -47,6 +53,7 @@ export class ThoughtView {
     this._phase = 'response';
     const line = id === 'linger' ? t.linger : id === 'stay' ? t.stay : t.pass;
     this.onRespond?.(t, id);
+    if (this.el.contains(document.activeElement)) document.activeElement.blur();
     this.el.classList.add('responded');
     this.buttons.innerHTML = '';
     this.text.textContent = line;

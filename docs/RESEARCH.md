@@ -31,6 +31,8 @@ Status key: ✅ reasonably confident · ⚠️ to check · ✏️ deliberate sim
 | Broken bowl, "worth mending slowly" | Story | ✏️ | Deliberately doesn't name kintsugi, which is a Japanese lacquer craft, not a Plum Village or Buddhist practice. |
 | Returning thoughts while sitting; "notice you've wandered, come back, without scolding yourself" | Sitting | ✅ | A gentle, non-judgemental framing consistent with the tradition's emphasis on kindness. |
 
+| **Dharma Library**: recorded talks by Gil Fronsdal and Diana Clark | Hall | ⚠️ / ✏️ | These are real teachers from the **Insight Meditation Center** (an Insight/Vipassana community), not Plum Village. The game's centre is fictional, so a library holding talks from friends in another tradition is plausible, and the library says plainly where the talks come from. The talks are reproduced unchanged under their CC licences and never edited or quoted in game text. Consider adding Plum Village-tradition talks if any are offered under a licence that permits redistribution. |
+
 ## Retired from v1 (Japanese Zen setting)
 Jizō statue, wooden han board and its inscription, tsukubai water basin, Sōtō/Rinzai seating questions, guest master (*shika*), tokonoma alcove. These are no longer in the game. Their notes are preserved in git history (`docs/RESEARCH.md` at the v1 merge).
 

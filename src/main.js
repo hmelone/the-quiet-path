@@ -25,6 +25,7 @@ import { openMenu, openSettings, openAlbum, openAbout, titleScreen, confirmBox }
 import { SCRIPTS, PROMPTS, onEnterZone, dayIntro } from './story/content.js';
 import { ThoughtStream } from './story/thoughts.js';
 import { ThoughtView } from './ui/thought.js';
+import { openLibrary } from './ui/library.js';
 
 const NIGHT_FADE = '#0e1220';
 
@@ -232,6 +233,7 @@ class Game {
       passTime: (t, bell) => g.passTime(t, bell),
       sleep: () => g.sleep(),
       sit: (kind) => g.sit(kind),
+      listen: () => g.listen(),
       develop: () => g.develop(),
       bell: (src) => g.bellOfMindfulness(src),
       prompt: () => PROMPTS[Math.floor(Math.random() * PROMPTS.length)],
@@ -351,6 +353,7 @@ class Game {
 
   bellOfMindfulness(source) {
     if (this.mode === 'title' || this.mode === 'loading') return;
+    if (this.mode === 'listen') { this.bells.reset(); return; } // don't ring over a talk
     const cap = source === 'you' ? '[you invite the great bell; its sound spreads across the valley]' : source === 'time' ? '[the great bell sounds from the tower]' : '[the bell of mindfulness sounds from the tower]';
     // a soft "waking" touch first, then the full sound
     audio.rin('');
@@ -462,6 +465,30 @@ class Game {
     this.mode = 'explore';
     if (how === 'bell') await this.passTime('The bell sounds. You stretch slowly, and stand.');
     else { audio.rin('[a small bell]'); this.hud.show(true); }
+  }
+
+  /** Sit in the hall's library corner and listen to a recorded talk, if you like. */
+  async listen() {
+    this.mode = 'listen';
+    this.hud.show(false);
+    const px = this.player;
+    const before = { x: px.x, z: px.z, yaw: px.yaw };
+    const c = this.world.built.hall.libraryCushion;
+    px.stop();
+    Object.assign(px, { x: c.x, z: c.z, yaw: c.rot, pitch: -0.04 });
+    px.lookTarget = null;
+    px.seated = true;
+    audio.setDuck(0.12);
+    audio.setAmbienceDuck(0.45);
+    this.bells.reset();
+    await openLibrary(this.ui);
+    this.bells.reset();
+    audio.setAmbienceDuck(1);
+    audio.setDuck(1);
+    px.seated = false;
+    Object.assign(px, before); // stand up where you came from
+    this.mode = 'explore';
+    this.hud.show(true);
   }
 
   async develop() {
