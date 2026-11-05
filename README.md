@@ -25,6 +25,7 @@ Then open the address Vite prints (it ends in `/the-quiet-path/`).
 | Approach something | Tap its symbol, or use the **Nearby** buttons | Click it, Tab to Nearby, or E for the nearest |
 | Camera | Camera button; drag to frame, pinch to zoom, tap to focus, shutter | C; scroll to zoom, click to focus, F cycles focus, Space for the shutter |
 | Album / menu | Corner buttons | P / Esc |
+| Dharma talks (in the hall) | Tap 🪷 *Sit on a cushion*; the talks are offered as you sit. Choose one and Play, or *Sit in silence* (*Choose a talk* brings them back) | Tab between talks and controls; Space or K plays/pauses; arrow keys seek or set volume on the sliders; Esc stands up |
 
 **Symbols:** 👁 look · 🚶 go (signposts and doors) · 🪷 sit · 💬 talk · 🔔 bell
 

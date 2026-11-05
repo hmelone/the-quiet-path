@@ -133,6 +133,7 @@ export function openAbout(root) {
     h('p', {}, 'The centre, its people and its words are fictional and written for this game. The practices — stopping for the bell, walking meditation, tea, silence — are drawn from the Plum Village tradition as respectfully as we can; notes and sources are in the project’s research file.'),
     h('h3', {}, 'Credits'),
     h('p', {}, 'Made with Three.js. All art is built and painted in code, and all sound and music is generated in your browser. Fonts: Cormorant Garamond, Source Sans 3 and Atkinson Hyperlegible (SIL Open Font License).'),
+    h('p', {}, 'The recorded talks in the hall’s Dharma library are by Gil Fronsdal and Diana Clark, recorded at the Insight Meditation Center in Redwood City, California, and shared by AudioDharma (audiodharma.org) under Creative Commons Attribution-NonCommercial-NoDerivatives licences. They are included unchanged; each talk’s title, source and licence are shown in the library. AudioDharma and the Insight Meditation Center are not connected with, and do not endorse, this game.'),
   );
   return panel(root, 'About', body);
 }
