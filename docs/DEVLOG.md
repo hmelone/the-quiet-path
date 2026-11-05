@@ -459,15 +459,16 @@ Real phones; how the new moments feel across several in-game days; whether the h
   - *Kitchen door* walks to the step, turns to face in, and opens the "Before lunch" text with three cooks inside;
   - screenshots checked of the altar, the hall from outside, the hut inside and outside, and the kitchen.
 
-## v2.9: A Dharma Library, and a thought that wouldn't fade
+## v2.9: A thought that wouldn't fade, a clear doorway, more cushions
 *Date: 2026-11-05*
 
 ### Your playtest notes
 - **Bug:** after choosing *Linger* (or *Stay with it a moment*) on a passing thought, on a phone, the response text stayed on screen and never faded.
-- Add a **Dharma Library** in the meditation hall: sit on a cushion and choose from real recorded dharma talks (MP3s supplied, from AudioDharma), with a peaceful listening interface. Skip AudioDharma's introductions using playback timestamps only, without editing the files. Credit every talk, never autoplay, pause when leaving, remember the place during the session, and work on desktop, mobile and keyboard.
-- Order: Gil Fronsdal, Diana Clark, Gil Fronsdal, Diana Clark, starting with *Look Behind Your Thoughts*.
+- A Dharma Library of recorded talks was requested, built, and then removed at your request after playtesting (see below).
+- Something like a board blocked the bottom of the meditation hall's entrance, and two glowing panels floated in the doorway at night.
+- Give a few more cushion options to sit on, like the current one.
 
-### The bug
+### The stuck thought
 The thought line pauses its fade while it holds keyboard focus. Tapping a response button focused that button, and then the button was removed. On phones no "focus left" event follows a removed button, so the line believed it was still held and never faded. Now:
 - focus is checked live;
 - the tapped button gives up focus;
@@ -475,71 +476,25 @@ The thought line pauses its fade while it holds keyboard focus. Tapping a respon
 
 Tested on an emulated Pixel 7: after tapping *Linger* the response fades in about 12 s, and after *Stay with it a moment* in about 14 s.
 
-### The Dharma Library
-- **Where:** in the meditation hall, in the front right corner. A low open cabinet of books and recordings, with a small wooden player, a dish of pebbles and a *Dharma talks* card, sits under the existing "Be still, and listen" board. Its own cushion is turned toward the altar.
-- **How you listen:** the 🪷 *Dharma library (listen to a talk)* symbol walks you to the cushion and seats you. A listening card opens beside the hall, which stays visible. It's styled like the game's other panels: serif titles, dark translucent panel, warm accent.
-  - It opens with: *"There is no need to hurry. Choose a teaching and listen for as long as you wish."*
-  - Each talk shows its title, teacher, date, length (of the teaching itself) and a short description written for the game.
-  - Controls: Play/Pause, a position slider with elapsed and total time, *Listen again from the beginning*, a volume slider, and the source and licence links.
-- **Calm by design:**
-  - nothing plays until you press Play, and choosing a talk only loads it;
-  - nothing in the world reacts to whether you listen;
-  - while you listen, the music and nature sound are turned down and the bell of mindfulness waits;
-  - on-screen narration is hidden while you listen;
-  - *Stand up* (or Esc) pauses the talk and returns you to where you were;
-  - each talk's place is remembered until the page is closed, so coming back resumes it, paused;
-  - when a talk ends, it simply says so and offers to listen again or choose another.
-- **Loading:** the MP3s live in `public/audio/dharma/`, so Vite copies them unchanged. They're never preloaded, so the opening of the game makes no audio requests. A file is fetched only when its talk is chosen.
-- **Accessibility:**
-  - real buttons and range inputs, with spoken values (e.g. "1 minute 5 seconds of 3 minutes 31 seconds");
-  - focus is kept inside the card, Esc stands up, and Space or K plays and pauses;
-  - a polite status line announces loading, errors and the end of a talk;
-  - on phones the card becomes a bottom sheet, with no sideways scrolling.
+### The doorway
+- **The low "board"** across the bottom of the entrance was the painted band I added along the base of the hall's outer walls in v2.8. It ran the full width of the front wall, including the doorway. It now stops at the door.
+- **The two glowing orange panels** in the doorway at night were an older bug: the inside copies of the back-wall windows were mirrored through the centre of the hall, which put two of them in the front doorway. Each back window now has its glow on the outside and inside faces of the back wall, with a thin lacquered frame and lattice inside, so they read as paper windows behind the altar.
 
-### Skipping the introductions (timestamps only)
-Every file begins with the same AudioDharma announcement (about 9 s): "The following talk was given at the Insight Meditation Center in Redwood City, California. Please visit our website at audiodharma.org." A few seconds of room sound follow, then the teacher begins.
+### More cushions
+The hall offers four free cushions instead of one. Each has its own 🪷 symbol and *Nearby* entry:
+- *left of the aisle*;
+- *right of the aisle*;
+- *by the left windows*;
+- *by the right windows*.
 
-To find each start:
-1. I transcribed every file in 3-second windows and then on the exact boundary segments, using a local Whisper model.
-2. I measured loudness every 0.1 s around the boundary.
-3. I set the start about 0.1–0.3 s before the teacher's first syllable.
+They're in the back two rows, which stay free when others sit at dawn and in the evening. You walk to a spot beside your chosen cushion, sit facing the altar, and stand up there again.
 
-The teachers' own opening remarks ("I would like to say a few words about the practice…", "So this morning I'd like to offer…") are kept as part of the teaching. Each recording also ends with the teacher's own thanks and no outro announcement, so playback runs to the end of the file.
-
-| # | Talk | Teacher | Starts at | Teaching length | First words kept |
-|---|---|---|---|---|---|
-| 1 | Practice Note: Look Behind Your Thoughts | Gil Fronsdal | **10.7 s** | 3:31 | "I would like to say a few words about the practice." |
-| 2 | Practice Notes: Simply Becoming Available | Diana Clark | **11.9 s** | 2:40 | "I'm just saying a few notes of something that you might practice with this morning." |
-| 3 | Practice Notes: Don't Carry the Past | Gil Fronsdal | **12.5 s** | 2:41 | "A few words about practicing here this morning…" |
-| 4 | Practice Notes: Gripping and Opening | Diana Clark | **11.9 s** | 2:29 | "So this morning I'd like to offer just a few words about something to consider while you practice." |
-
-Notes:
-- **Don't Carry the Past:** the recording itself picks Gil up at "A few words…", probably with "I'd like to say" lost when the recording started. Nothing of the teaching exists earlier in the file; 8.6–12.6 s is only room sound.
-- The player never lets playback sit before a talk's start: seeking to 0, *Listen again*, and replaying after the end all go to the stored start.
-
-### Copyright
-- **Licences:** the files' embedded metadata shows the two Gil Fronsdal talks are **CC BY-NC-ND 3.0** (not 4.0) and the two Diana Clark talks are **CC BY-NC-ND 4.0**. Each talk links its own correct licence.
-- **Files unchanged:** byte for byte the same as the uploads and the build output (SHA-256 checked; hashes stored in `src/dharma/talks.js`).
-- **Attribution:** in the library card, in About and in `CREDITS.md`, each with a clear statement that AudioDharma and the Insight Meditation Center are not connected with the game and do not endorse it.
-- **Not verified:** audiodharma.org couldn't be reached from the development environment, so the source URLs (the two older ones are in AudioDharma's old URL format) and licences come from each file's own metadata, not from the live site.
+### The Dharma Library, removed
+In this iteration I built a Dharma Library with four AudioDharma talks: a listening card, start timestamps that skipped the AudioDharma announcement without editing the files, attribution and licences, first in a library corner and then offered when you sat on a cushion. After playtesting you asked for it to be removed. The MP3s, the talk configuration, the listening interface, the cabinet and the credits entries are gone. Sitting on a cushion is quiet sitting again, as before. The work remains in this branch's git history if you want it back.
 
 ### Checks
-Production build served under `/the-quiet-path/` (as on GitHub Pages; range requests answered 206); headless Chromium.
-- **Desktop:** no MP3 requests at game load or when opening the library. For each of the four talks:
-  - choosing does not autoplay and sets the position to the configured start;
-  - Play plays;
-  - seeking to 50% lands at start + half the teaching;
-  - seeking to 0% stays after the announcement;
-  - playback reaches the end of the file;
-  - *Listen again* plays from the start.
-- **Leaving and returning:** standing up pauses the talk; coming back resumes the same talk at the same place, paused. Esc stands up.
-- **Phone (emulated Pixel 7):** play works by touch, with no horizontal overflow.
-
-### Follow-up: the talks are offered when you sit on a cushion
-The library first had its own corner seat. Your note: the talk options should start when you sit down on a meditation cushion. Now:
-- **Sit on a cushion** in the hall seats you facing the Buddha as before, and the Dharma talks open straight away (still no autoplay).
-- The card ends with **Sit in silence**, for the usual quiet sitting with breath and passing thoughts, and **Stand up**.
-- While sitting in silence, a new **Choose a talk** button brings the talks back, with the last talk remembered at its place.
-- The separate library seat and its 🪷 symbol are gone. The cabinet of books and recordings, with its *Dharma talks* card, stays in the corner as part of the room.
-
-Rechecked through the real cushion, on the production build: all four talks start at their timestamps with no autoplay and play to the end. *Sit in silence* starts quiet sitting with the talk paused; *Choose a talk* reopens the card while you stay seated, facing the altar; Esc stands you up. The emulated phone also passed.
+- `npm run build` passes.
+- In headless Chromium:
+  - the thought fix on an emulated phone;
+  - the hall doorway at night (clear, no band, no floating panels) and the back wall (framed windows behind the altar);
+  - each of the four cushions: walking there, sitting at the cushion facing the altar (yaw 0), nobody else already sitting there, and standing up.

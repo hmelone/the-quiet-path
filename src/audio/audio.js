@@ -80,16 +80,10 @@ class AudioEngine {
     const t = this.ctx.currentTime;
     const v = settings.values;
     this.master.gain.setTargetAtTime(v.muted ? 0 : v.master, t, 0.3);
-    this.bus.ambience.gain.setTargetAtTime(v.ambience * (this.ambDuck ?? 1), t, 0.6);
+    this.bus.ambience.gain.setTargetAtTime(v.ambience, t, 0.2);
     this.bus.effects.gain.setTargetAtTime(v.effects, t, 0.2);
     this.bus.bell.gain.setTargetAtTime(v.bell, t, 0.2);
     this.bus.music.gain.setTargetAtTime(v.musicOn ? v.music * (this.duck ?? 1) : 0, t, 0.8);
-  }
-
-  /** Lower the nature sound (listening to a talk). k: 0..1 */
-  setAmbienceDuck(k) {
-    this.ambDuck = k;
-    this.applySettings();
   }
 
   /** Lower the music (bells, sitting). k: 0..1 */
