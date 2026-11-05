@@ -465,3 +465,4 @@ html[data-motion='reduced'] .lib-card { animation: none; }
   .lib-welcome { font-size: 1.05em; }
 }
 body.listening .whispers, body.listening .thought-line { display: none; }
+.lib-leave-row { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }

@@ -534,3 +534,12 @@ Production build served under `/the-quiet-path/` (as on GitHub Pages; range requ
   - *Listen again* plays from the start.
 - **Leaving and returning:** standing up pauses the talk; coming back resumes the same talk at the same place, paused. Esc stands up.
 - **Phone (emulated Pixel 7):** play works by touch, with no horizontal overflow.
+
+### Follow-up: the talks are offered when you sit on a cushion
+The library first had its own corner seat. Your note: the talk options should start when you sit down on a meditation cushion. Now:
+- **Sit on a cushion** in the hall seats you facing the Buddha as before, and the Dharma talks open straight away (still no autoplay).
+- The card ends with **Sit in silence**, for the usual quiet sitting with breath and passing thoughts, and **Stand up**.
+- While sitting in silence, a new **Choose a talk** button brings the talks back, with the last talk remembered at its place.
+- The separate library seat and its 🪷 symbol are gone. The cabinet of books and recordings, with its *Dharma talks* card, stays in the corner as part of the room.
+
+Rechecked through the real cushion, on the production build: all four talks start at their timestamps with no autoplay and play to the end. *Sit in silence* starts quiet sitting with the talk paused; *Choose a talk* reopens the card while you stay seated, facing the altar; Esc stands you up. The emulated phone also passed.

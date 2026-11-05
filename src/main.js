@@ -233,7 +233,6 @@ class Game {
       passTime: (t, bell) => g.passTime(t, bell),
       sleep: () => g.sleep(),
       sit: (kind) => g.sit(kind),
-      listen: () => g.listen(),
       develop: () => g.develop(),
       bell: (src) => g.bellOfMindfulness(src),
       prompt: () => PROMPTS[Math.floor(Math.random() * PROMPTS.length)],
@@ -458,37 +457,30 @@ class Game {
       px.lookTarget = null;
     }
     px.seated = true;
-    const how = await this.sitting.start(kind);
+    let how;
+    if (kind === 'hall') {
+      // On a hall cushion the Dharma talks are offered first; you can choose
+      // one, or just sit in silence (and come back to the talks at any time).
+      for (;;) {
+        this.mode = 'listen'; // the bell of mindfulness waits during a talk
+        audio.setDuck(0.12);
+        audio.setAmbienceDuck(0.45);
+        this.bells.reset();
+        const choice = await openLibrary(this.ui);
+        audio.setAmbienceDuck(1);
+        audio.setDuck(0.4);
+        this.mode = 'sit';
+        if (choice === 'stand') { how = 'stand'; break; }
+        how = await this.sitting.start(kind, { talks: true });
+        if (how !== 'talks') break;
+      }
+    } else how = await this.sitting.start(kind);
     px.seated = false;
     if (kind === 'hall') Object.assign(px, before); // stand up into the aisle
     audio.setDuck(1);
     this.mode = 'explore';
     if (how === 'bell') await this.passTime('The bell sounds. You stretch slowly, and stand.');
     else { audio.rin('[a small bell]'); this.hud.show(true); }
-  }
-
-  /** Sit in the hall's library corner and listen to a recorded talk, if you like. */
-  async listen() {
-    this.mode = 'listen';
-    this.hud.show(false);
-    const px = this.player;
-    const before = { x: px.x, z: px.z, yaw: px.yaw };
-    const c = this.world.built.hall.libraryCushion;
-    px.stop();
-    Object.assign(px, { x: c.x, z: c.z, yaw: c.rot, pitch: -0.04 });
-    px.lookTarget = null;
-    px.seated = true;
-    audio.setDuck(0.12);
-    audio.setAmbienceDuck(0.45);
-    this.bells.reset();
-    await openLibrary(this.ui);
-    this.bells.reset();
-    audio.setAmbienceDuck(1);
-    audio.setDuck(1);
-    px.seated = false;
-    Object.assign(px, before); // stand up where you came from
-    this.mode = 'explore';
-    this.hud.show(true);
   }
 
   async develop() {

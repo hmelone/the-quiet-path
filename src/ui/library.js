@@ -20,7 +20,10 @@ const spoken = (s) => {
 };
 const longDate = (d) => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 
-/** Opens the library; resolves when the listener stands up. */
+/**
+ * Opens the talk options while you sit on a hall cushion.
+ * Resolves 'silence' (keep sitting, without a talk) or 'stand'.
+ */
 export function openLibrary(root) {
   return new Promise((resolve) => {
     const audio = new Audio();
@@ -52,7 +55,7 @@ export function openLibrary(root) {
         h('label', { class: 'lib-vol-wrap', for: 'lib-vol' }, h('span', {}, 'Volume'), vol)),
       status, credit);
 
-    const close = () => {
+    const close = (how = 'stand') => {
       if (closed) return;
       closed = true;
       remember();
@@ -62,16 +65,18 @@ export function openLibrary(root) {
       release?.();
       wrap.remove();
       document.body.classList.remove('listening');
-      resolve();
+      resolve(how);
     };
 
     const card = h('div', { class: 'lib-card', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'lib-heading' },
       h('div', { class: 'lib-head' },
-        h('h2', { id: 'lib-heading' }, 'The Dharma library'),
-        h('button', { class: 'lib-leave', onclick: close }, 'Stand up')),
+        h('h2', { id: 'lib-heading' }, 'Dharma talks')),
       h('p', { class: 'lib-welcome' }, LIBRARY_WELCOME),
       h('p', { class: 'lib-about' }, 'Short talks recorded at the Insight Meditation Center in California and shared freely by AudioDharma. Listen to as much or as little as you like.'),
-      list, now);
+      list, now,
+      h('div', { class: 'lib-leave-row' },
+        h('button', { class: 'lib-silence', onclick: () => close('silence') }, 'Sit in silence'),
+        h('button', { class: 'lib-leave', onclick: () => close('stand') }, 'Stand up')));
     const wrap = h('div', { class: 'lib-wrap' }, card);
 
     // --- the talks -------------------------------------------------------------------
@@ -179,7 +184,7 @@ export function openLibrary(root) {
 
     document.body.classList.add('listening'); // hush on-screen narration while listening
     root.append(wrap);
-    release = trapFocus(card, close); // Esc stands up
+    release = trapFocus(card, () => close('stand')); // Esc stands up
     const first = lastId ? items.find(([id]) => id === lastId)?.[1] : items[0][1];
     if (lastId) choose(TALKS.find((t) => t.id === lastId));
     setTimeout(() => first?.focus(), 60);

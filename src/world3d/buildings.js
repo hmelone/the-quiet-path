@@ -629,18 +629,12 @@ function buildHall() {
   bowlBell.position.y += 0.1;
   g.add(bellCushion);
 
-  // the library's sign and its own cushion, turned toward the altar
+  // the library's sign: the talks offered when you sit on a cushion are kept here
   const libSign = board('Dharma talks', 0.62, 0.2, { w: 420, h: 136 });
   libSign.position.set(LX + 0.19, F + 1.08, LZ); // standing on the cabinet, against the wall
   libSign.rotation.set(0, -Math.PI / 2, 0);
   libSign.rotateX(-0.12);
   g.add(libSign);
-  const LCX = W / 2 - 1.15, LCZ = LZ + 0.15, LYAW = Math.atan2(LCX, -(-D / 2 + 0.8) + LCZ);
-  const libCushion = new THREE.Mesh(cushionGeo(), paint({}));
-  libCushion.position.set(LCX, F, LCZ);
-  libCushion.rotation.y = Math.PI + LYAW;
-  libCushion.receiveShadow = true;
-  g.add(libCushion);
 
   // calligraphy boards on the inner walls
   const phrases = ['Just this breath', 'Each step is enough', 'Be still, and listen'];
@@ -667,7 +661,6 @@ function buildHall() {
     group: g, colliders: worldColliders(k.colliders, B.x, B.z, B.rot), light,
     cushionSpots: g.userData.cushionSpots.map(([x, z, r]) => ({ x: B.x + x, z: B.z + z, rot: r, y: p.h + F })),
     playerCushion: { x: B.x - 1.5, z: B.z + 2.4, rot: 0, y: p.h + F },
-    libraryCushion: { x: B.x + LCX, z: B.z + LCZ, rot: LYAW, y: p.h + F },
     library: { x: B.x + LX, z: B.z + LZ },
     altar: { x: B.x, z: B.z - D / 2 + 0.8 }, bowlBell: { x: B.x - 2.2, z: B.z - D / 2 + 1.2 },
   };

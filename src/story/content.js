@@ -82,7 +82,6 @@ export const SCRIPTS = {
 
   // --- meditation hall --------------------------------------------------------------
   async sitHall(api) { await api.sit('hall'); },
-  async library(api) { await api.listen(); },
   async sitHallYard(api) { await api.sit('yard'); },
   async altar(api) {
     const c = await api.say({

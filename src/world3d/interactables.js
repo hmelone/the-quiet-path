@@ -33,7 +33,6 @@ export function buildInteractables(built, people) {
     // the hall
     { id: 'hallDoor', kind: 'go', label: 'Enter the meditation hall', x: H.x, z: H.z + H.d / 2 + 0.5, y: hallFloor + 2.2, to: [H.x, H.z + 1.5], toName: 'inside the hall', faceTo: [H.x, H.z - 4] },
     { id: 'cushion', kind: 'sit', label: 'Sit on a cushion', x: H.x - 1.5, z: H.z + 2.4, y: hallFloor + 0.7, stand: [H.x, H.z + 2.4], script: 'sitHall' },
-    { id: 'library', kind: 'sit', label: 'Dharma library (listen to a talk)', x: H.x + H.w / 2 - 0.4, z: H.z - 2.9, y: hallFloor + 1.3, stand: [H.x + H.w / 2 - 1.6, H.z - 1.9], script: 'library' },
     { id: 'altar', kind: 'look', label: 'The altar', x: H.x, z: H.z - H.d / 2 + 0.8, y: hallFloor + 1.5, stand: [H.x, H.z - 1.5], script: 'altar' },
     { id: 'bowlBell', kind: 'look', label: 'The bell bowl', x: H.x - 2.2, z: H.z - H.d / 2 + 1.2, y: hallFloor + 0.8, stand: [H.x - 1.6, H.z - 1.4], script: 'bellBowl' },
     { id: 'callig', kind: 'look', label: 'Brushed words', x: H.x - H.w / 2 + 0.2, z: H.z, y: hallFloor + 2.75, stand: [H.x - 3, H.z], script: 'calligraphy' },
