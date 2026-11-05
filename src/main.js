@@ -25,6 +25,7 @@ import { openMenu, openSettings, openAlbum, openAbout, titleScreen, confirmBox }
 import { SCRIPTS, PROMPTS, onEnterZone, dayIntro } from './story/content.js';
 import { ThoughtStream } from './story/thoughts.js';
 import { ThoughtView } from './ui/thought.js';
+import { openLibrary } from './ui/library.js';
 
 const NIGHT_FADE = '#0e1220';
 
@@ -353,6 +354,7 @@ class Game {
 
   bellOfMindfulness(source) {
     if (this.mode === 'title' || this.mode === 'loading') return;
+    if (this.mode === 'listen') { this.bells.reset(); return; } // don't ring over a talk
     const cap = source === 'you' ? '[you invite the great bell; its sound spreads across the valley]' : source === 'time' ? '[the great bell sounds from the tower]' : '[the bell of mindfulness sounds from the tower]';
     // a soft "waking" touch first, then the full sound
     audio.rin('');
@@ -459,7 +461,24 @@ class Game {
       px.lookTarget = null;
     }
     px.seated = true;
-    const how = await this.sitting.start(kind);
+    let how;
+    if (kind === 'hall') {
+      // On a hall cushion the Dharma talks are offered first; you can choose
+      // one, or just sit in silence (and come back to the talks at any time).
+      for (;;) {
+        this.mode = 'listen'; // the bell of mindfulness waits during a talk
+        audio.setDuck(0.12);
+        audio.setAmbienceDuck(0.45);
+        this.bells.reset();
+        const choice = await openLibrary(this.ui);
+        audio.setAmbienceDuck(1);
+        audio.setDuck(0.4);
+        this.mode = 'sit';
+        if (choice === 'stand') { how = 'stand'; break; }
+        how = await this.sitting.start(kind, { talks: true });
+        if (how !== 'talks') break;
+      }
+    } else how = await this.sitting.start(kind);
     px.seated = false;
     if (kind === 'hall') Object.assign(px, before); // stand up into the aisle
     audio.setDuck(1);
