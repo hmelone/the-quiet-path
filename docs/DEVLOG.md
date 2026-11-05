@@ -348,3 +348,66 @@ The title screen was silent; you wanted the music to play there by default.
 ### Tested (headless Chromium)
 - **Autoplay allowed:** on load the audio is running and music is audible (peak 0.02) with no note. Silent fades it to nothing; Sound on brings it back; it continues after Begin.
 - **Strict browser** (simulated: audio held until a real user interaction): before any tap the audio is suspended and "Tap anywhere for sound" shows. After one tap on an empty part of the title screen, the audio is running and the note is hidden.
+
+---
+
+## v2.7: Things that change, rare visitors, easier walking
+*Date: 2026-11-05*
+
+### Your playtest notes
+- Add more changing, interactive things (like the broken tea bowl), and a few more passing thoughts, keeping to the Plum Village tradition.
+- Some walking paths were awkward, and it was hard to look around while walking.
+- The hut walls looked disconnected from the floor from outside.
+- Occasionally show an animal that isn't normally there: an owl hooting at night, a hawk by day, a rare snake you can choose to meet with love rather than react to.
+- Make sure the plum trees look like plum trees.
+- Animals that don't go in water shouldn't walk into the pond.
+
+### What changed
+- **Things that change from day to day**, all in the spirit of the tradition:
+  - **Join the walking meditation.** On mornings when the line is walking around the pond, a 🚶 *Join the walking meditation* symbol rides with the last walker. You fall in at the end and go round once at the line's slow pace (banner: "Walking meditation · slowly, with the line"). Stop or Esc leaves it gently.
+  - **A child's pebble-meditation bag** appears on the pond bench from day 2. Inside are four pebbles and a card: "flower · mountain · water · space". You can hold the pebbles (four short, original lines), take the bag to the tea house (a child's drawing is pinned there later), or leave it. If you leave it, the next day the bag is gone but one pebble has been left behind on purpose; you can keep it or pass it on.
+  - **Plum seedlings to water** at the orchard edge. They grow a little on their own and a little more each day you water them, until one puts out a few too-early blossoms. Rain waters them for you.
+  - **A single lotus** near the bridge, changing every day: bud → opening → fully open (with a bee) → letting its petals go → seed pod → a new bud beside the pod, then round again. Looking at it notes when it has changed since you last looked.
+  - **The broken tea bowl comes back mended** two days later. The piece is set back with a thin bright line of lacquer: "It isn't hidden. It's part of the bowl now."
+- **More passing thoughts** (39 in total, up from 26), including:
+  - "Yesterday it was still a bud." (lotus)
+  - "Someone will sit under these trees one day." (watering)
+  - "It's more beautiful with the crack than it was without it." (mended bowl)
+  - "I liked walking with everyone." (after the walking meditation)
+  - a startle at the snake, and wanting to share the hawk
+  - general ones: breathing, the ground holding you up, planning tomorrow, judging someone, old plum trees, the cooks up before dawn.
+
+  Slightly more frequent: about 19 an hour on *Now and then* (at least about a minute apart, with quiet stretches up to about 5 minutes), about 11 an hour on *Rarely*.
+- **Rare visitors.** They're not there every day, and the same for a given day and time, so reloading doesn't change them:
+  - **a hawk** circling high on clear mornings and afternoons, with an occasional far-off cry;
+  - **an owl gliding across the valley** on some nights, hooting as it passes;
+  - **a snake** resting on warm stones by a path. It never flees or threatens. Its choices are *Breathe, and wish it well*, *Step back and give it room*, or *Stay still and simply watch*. Each is kind, and afterwards it slides away into the grass.
+- **Looking around while walking:**
+  - The view no longer snaps back to face each waypoint. Auto-facing now waits until you haven't looked around for about 5 seconds, aims smoothly at a point a few metres ahead, and turns more gently.
+  - Routes are rounded off at corners.
+  - If something briefly blocks a step, the walk moves on instead of getting stuck.
+- **Buildings sit on their bases.** The hut's stone footing now reaches the floor, with a wooden sill under the walls; it previously left a 15 cm gap. The meditation hall had the same gap and is fixed. The tea house gets a stone plinth so it never floats on the slope.
+- **Plum trees** rebuilt to look like plum trees:
+  - a short gnarled trunk with rounded knuckles, and angular zig-zag limbs with thin upright twigs;
+  - in **late spring** (the game's season), full small leaves with young green plums, a few starting to blush, matching the in-game description.
+
+  Blossom, as small flowers along the twigs, is supported for when seasons arrive.
+- **Land animals stay out of the pond:** deer, fox, rabbits, squirrels, ground birds, the cat and the snake. After every movement step, if one would end up in the pond or inside a building, it stays put and turns away. The heron is allowed to wade.
+
+### What was tested (headless Chromium, low quality)
+- ✅ 33 land animals placed at the shore and sent straight at the water for 400 steps: the closest any got was 1.18 (the pond's edge is 1.0).
+- ✅ The rare visitors are rare: in 120 sampled day-times, the snake appeared 30 times and the hawk 35. An owl glide was found on day 3 at night.
+- ✅ The snake offers three calm choices, and slides away afterwards.
+- ✅ The pebble bag is absent on day 1 and present on day 2. Holding the pebbles works. Left on the bench, the next day the bag is gone and one pebble remains.
+- ✅ The lotus stages follow the days (`[0,1,2,3,4,5,0]`), and the description matches the day's stage.
+- ✅ Watering the seedlings advances them (stage 1 → 2).
+- ✅ The broken bowl reappears mended two days later.
+- ✅ Joining the walking meditation sets a slow pace (0.38 m/s) and shows the banner. Esc leaves it, restores normal pace, and doesn't open the menu.
+- ✅ After you look around mid-walk, the view stays put (yaw unchanged over 2.5 s) while walking continues.
+- ✅ Visual checks: the hut wall sits on its base; the plum orchard is in leaf.
+- Pacing simulation: ~19 thoughts/hour (*Now and then*) and ~11/hour (*Rarely*).
+
+The playtest itself needed two fixes along the way; neither was a game bug. The test waited on dialogs it was supposed to click through, and one check expected the wrong day's lotus text.
+
+### Not yet tested
+Real phones; how the new moments feel across several in-game days; whether the hawk cry and owl hoots sound natural.
