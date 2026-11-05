@@ -301,7 +301,18 @@ export const SCRIPTS = {
   },
   async kitchen(api) {
     const t = api.time;
-    await api.say({ text: t === 1 || t === 2 ? 'Through the open door: steam, a big pot, someone chopping in a slow, even rhythm. A sign by the door says that today’s cooks are practising silence.' : 'The kitchen is quiet now. Clean bowls are stacked to dry, rims down, in a long row.' });
+    const meal = ['breakfast', 'lunch', 'dinner'][t];
+    const text = {
+      0: 'Before breakfast. The big pot of rice porridge has been on since before the bell; one cook stirs it in long, slow circles. Someone else is slicing ginger and spring onions, and laying out little dishes of peanuts and pickled greens.',
+      1: 'Lunch is on its way. Carrots and tofu are being cut on the wide table, a basket of greens waits to be washed, and a pot of soup steams on the stove. Nobody hurries. The knife keeps a slow, even rhythm.',
+      2: 'They are starting dinner: squash from the garden, mushrooms, rice for everyone. One cook washes greens at the stone sink; another stirs the soup and tastes it, and adds a little more ginger.',
+    }[t];
+    if (meal) {
+      await api.say({ title: `Before ${meal}`, text: `${text} Everything is vegetarian, grown or given nearby. A small sign by the door says the cooks are practising silence, so you just watch for a while.` });
+      await api.say({ text: 'One of them looks up, sees you in the doorway, and smiles without saying anything. You join your palms, and go back to the terrace.' });
+    } else {
+      await api.say({ text: t === 3 ? 'The door is closed now. Behind it, quiet sounds of washing up: bowls set down gently, water poured out, a cloth wrung.' : 'The kitchen door is closed for the night. Clean bowls will be stacked inside to dry, rims down, in a long row.' });
+    }
   },
   async tea(api) {
     const c = await api.say({ text: 'A pot of tea and a few cups sit on the table. You could pour a cup and drink it slowly.', choices: [{ id: 'drink', label: 'Pour a cup' }, { id: 'go', label: 'Not now' }] });

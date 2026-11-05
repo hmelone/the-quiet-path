@@ -271,6 +271,19 @@ class Game {
       }
       return;
     }
+    if (it.peek !== undefined) {
+      // Step up to the doorway and look in, rather than reading from afar.
+      const look = () => {
+        this.walkingTo = null;
+        Object.assign(this.player, { yaw: it.peek, pitch: -0.12 });
+        this.player.lookTarget = null;
+        this.runScript(it.script);
+      };
+      if (Math.hypot(it.stand[0] - this.player.x, it.stand[1] - this.player.z) > 0.6 && this.player.walkTo(it.stand[0], it.stand[1], look)) {
+        this.walkingTo = 'the kitchen door';
+      } else { this.player.stop(); look(); }
+      return;
+    }
     if (it.kind === 'sit' && it.stand && Math.hypot(it.stand[0] - this.player.x, it.stand[1] - this.player.z) > 1.2) {
       const ok = this.player.walkTo(it.stand[0], it.stand[1], () => { this.walkingTo = null; this.runScript(it.script); });
       if (ok) { this.walkingTo = it.label.toLowerCase(); return; }
@@ -432,9 +445,19 @@ class Game {
     this.mode = 'sit';
     this.hud.show(false);
     audio.setDuck(0.4);
-    this.player.seated = true;
+    const px = this.player;
+    const before = { x: px.x, z: px.z };
+    if (kind === 'hall') {
+      // settle onto a cushion in the rows, facing the altar like everyone else
+      const c = this.world.built.hall.playerCushion;
+      px.stop();
+      Object.assign(px, { x: c.x, z: c.z + 0.1, yaw: c.rot, pitch: -0.06 });
+      px.lookTarget = null;
+    }
+    px.seated = true;
     const how = await this.sitting.start(kind);
-    this.player.seated = false;
+    px.seated = false;
+    if (kind === 'hall') Object.assign(px, before); // stand up into the aisle
     audio.setDuck(1);
     this.mode = 'explore';
     if (how === 'bell') await this.passTime('The bell sounds. You stretch slowly, and stand.');

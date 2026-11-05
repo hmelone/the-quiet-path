@@ -88,7 +88,7 @@ export class People {
     if (time === 0 || time === 3) {
       b.hall.cushionSpots.slice(0, 12).forEach((s, i) => {
         if (i % 3 === 2) return;
-        this.add(figure(seed++, { kind: i % 4 === 1 ? 'lay' : 'monastic', seated: true }), { mode: 'still', x: s.x, z: s.z, y: s.y + 0.1, yaw: s.rot + Math.PI, role: 'sitting' });
+        this.add(figure(seed++, { kind: i % 4 === 1 ? 'lay' : 'monastic', seated: true }), { mode: 'still', x: s.x, z: s.z, y: s.y + 0.1, yaw: s.rot, role: 'sitting' }); // facing the altar
       });
     }
     // a monastic sweeping the forest path in the morning
@@ -111,6 +111,13 @@ export class People {
     if (time === 2 && !rain) {
       const bn = b.benches[1];
       this.add(figure(seed++, { kind: 'lay', seated: true, pose: 'reading' }), { mode: 'still', x: bn.x, z: bn.z, y: groundAt(bn.x, bn.z) + 0.3, yaw: bn.rot + Math.PI, role: 'reading' });
+    }
+    // cooks preparing a vegetarian meal before breakfast, lunch and dinner
+    if (b.tea.cooking) {
+      const fy = b.tea.floorY;
+      b.tea.spots.cooks.forEach((c, i) => {
+        this.add(figure(seed++, { kind: i === 1 ? 'lay' : 'monastic' }), { mode: 'cook', x: c.x, z: c.z, y: fy, yaw: c.yaw, role: 'cooking', stir: i === 0 });
+      });
     }
     // Sister Hien
     const hienAt = { 0: [-14.5, -33.2, 2.6], 1: [-13, -32.8, 2.2], 2: [b.tea.spots.front.x, b.tea.spots.front.z, Math.PI], 3: [3, -7.5, Math.PI], 4: null }[time];
@@ -149,6 +156,10 @@ export class People {
       } else if (p.mode === 'sweep') {
         body.rotation.y = Math.sin(t * 1.1 + p.phase) * 0.35 * go;
         body.rotation.x = 0.12;
+      } else if (p.mode === 'cook') {
+        // a slow, even rhythm: stirring at the stove, or chopping and washing
+        if (p.stir) { body.rotation.y = Math.sin(t * 1.2 + p.phase) * 0.12 * go; body.rotation.x = 0.06; }
+        else body.rotation.x = (0.1 + Math.abs(Math.sin(t * 2.2 + p.phase)) * 0.035) * go;
       } else if (p.mode === 'work') {
         body.rotation.x = (0.15 + Math.sin(t * 0.5 + p.phase) * 0.12) * go;
       } else {

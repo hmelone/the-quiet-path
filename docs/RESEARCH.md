@@ -19,14 +19,14 @@ Status key: ✅ reasonably confident · ⚠️ to check · ✏️ deliberate sim
 | Tower bell hung in an open tower and sounded with a hanging wooden log | Tower | ⚠️ | Common in Vietnamese temples. Confirm for Plum Village centres. |
 | Bell bowl on a cushion near the altar, with a small wooden striker | Hall | ✅ | Typical meditation hall arrangement. |
 | **Walking meditation** in a slow, silent line around the pond | Pond | ✅ / ⚠️ | Outdoor walking meditation is a daily practice. Check its usual pace and form (often not strictly single-file). |
-| **Noble silence**; cooks practising silence | Kitchen | ⚠️ | Check how noble silence is described (usually from evening until after breakfast). |
+| **Noble silence**; cooks practising silence while preparing vegetarian meals before breakfast, lunch and dinner | Kitchen | ⚠️ | Check how noble silence is described (usually from evening until after breakfast), and how kitchen work is shared (often monastics and lay friends together). |
 | Tea on the terrace; drinking tea slowly | Tea house | ✅ / ⚠️ | Tea meditation is a practice. Our scene is informal tea, not the formal ceremony. |
 | **Monastics in brown robes**, some with conical hats outdoors; addressed as "Sister" or "Brother" | People | ⚠️ | Check robe colours (brown is everyday wear) and forms of address. "Thầy" is used for teachers and monks; we don't use it yet. |
 | Joining palms "like a lotus bud" and bowing | Altar, greetings | ✅ | A common Plum Village description of the gesture. |
-| Altar with a small Buddha figure, candle, flowers, incense | Hall | ✅ / ⚠️ | Keep it simple and respectful. The figure is generic and small. |
-| Cushions in rows facing a centre aisle | Hall | ⚠️ | Check typical hall layouts (rows facing each other, or facing the altar). |
+| Altar with a seated Buddha (meditation posture, hands resting in the lap, lotus pedestal, halo), candle, flowers, incense | Hall | ✅ / ⚠️ | Sculpted respectfully as a recognisable seated Buddha in v2.8. Check the details against images of statues in Plum Village halls (often a seated Buddha in meditation; sometimes a simple calligraphy or flowers alone). |
+| Cushions in rows across the hall, everyone facing the altar (front of the hall), with a centre aisle | Hall | ✅ | Updated in v2.8 from playtest feedback: in Plum Village, the sangha sits facing the front of the hall where the Buddha is, not the wall (as in some Sōtō Zen halls) and not across an aisle. |
 | Farmhouse tea house, plum orchard, lavender | Lower valley | ✏️ | A nod to the French countryside setting of the original community. The plums and lavender are artistic. |
-| Vietnamese-style curved roofs on the gate and tower | Gate, tower | ✏️ | Simplified forms. Check that the proportions read as Vietnamese, not Japanese or Chinese. |
+| Vietnamese-style clay-tile roofs (curled ridge ends, lotus-bud finial), ochre walls and red-brown lacquered columns | Gate, tower, hall | ✏️ | Simplified forms, restyled in v2.8 away from a Japanese look. Check that the proportions read as Vietnamese, not Japanese or Chinese. |
 | "Sister Hien" | People | ⚠️ | A fictional Dharma name. Make sure it doesn't match a well-known real monastic; consider a different name if it does. |
 | Broken bowl, "worth mending slowly" | Story | ✏️ | Deliberately doesn't name kintsugi, which is a Japanese lacquer craft, not a Plum Village or Buddhist practice. |
 | Returning thoughts while sitting; "notice you've wandered, come back, without scolding yourself" | Sitting | ✅ | A gentle, non-judgemental framing consistent with the tradition's emphasis on kindness. |
