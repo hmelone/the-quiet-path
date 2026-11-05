@@ -303,6 +303,31 @@ class AudioEngine {
   }
 
   /** Old wood settling: a soft, short rasp of filtered noise. */
+  /** A hawk's cry, far overhead: a rasping, falling scream made of filtered noise. */
+  hawk() {
+    if (!this.ctx || settings.get('muted')) return;
+    this.caption('[a hawk cries, high overhead]');
+    const t = this.ctx.currentTime + 0.05;
+    const s = this.ctx.createBufferSource();
+    s.buffer = this.noise.white;
+    const f = this.ctx.createBiquadFilter();
+    f.type = 'bandpass';
+    f.Q.value = 9;
+    f.frequency.setValueAtTime(3000, t);
+    f.frequency.linearRampToValueAtTime(2100, t + 1.1);
+    s.connect(f);
+    this._env(f, t, 0.06, 0.05, 1.2, 'ambience', rand(-0.6, 0.6), 0.5);
+    s.start(t, Math.random() * 3);
+    s.stop(t + 1.3);
+  }
+
+  /** An owl's soft hoots as it glides over. */
+  owlHoot() {
+    if (!this.ctx || settings.get('muted')) return;
+    this.caption('[an owl hoots as it glides over]');
+    this._owl?.();
+  }
+
   _creak() {
     const t = this.ctx.currentTime;
     const pan = rand(-0.6, 0.6);

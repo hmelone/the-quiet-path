@@ -1,7 +1,8 @@
 // Everything you can approach: look, go (signposts & doors), sit, talk, bell.
 // Each has an icon position, a place to stand, and a script to run.
 import { groundAt, inBuilding } from './terrain.js';
-import { ZONES, BUILDINGS, PADS } from './layout.js';
+import { ZONES, BUILDINGS, PADS, WATER_Y } from './layout.js';
+import { SEEDLING_SPOT, LOTUS_SPOT } from './changing.js';
 
 export const KINDS = {
   look: { icon: 'eye', verb: 'Look' },
@@ -66,6 +67,18 @@ export function buildInteractables(built, people) {
     { id: 'note', kind: 'look', label: 'A folded note', x: hut.desk.x + 0.2, z: hut.desk.z, y: PADS.hut.h + 0.85, stand: [BUILDINGS.hut.x + 0.3, BUILDINGS.hut.z + 0.6], script: 'note', visible: (c) => !!c.flags.noteWaiting },
     { id: 'darkroom', kind: 'look', label: 'Darkroom corner', x: hut.darkroom.x, z: hut.darkroom.z, y: PADS.hut.h + 1.6, stand: [BUILDINGS.hut.x, BUILDINGS.hut.z - 0.6], script: 'darkroom' },
     { id: 'signHut', kind: 'go', label: 'Back to the pond', ...at(15.8, 34, 1.4), to: [12, 25], toName: 'the lotus pond' },
+    // --- things that change from day to day ---
+    { id: 'lotusBud', kind: 'look', label: 'A single lotus', x: LOTUS_SPOT.x, z: LOTUS_SPOT.z, y: WATER_Y + 1.0, stand: [3, 11.5], script: 'lotusBud' },
+    { id: 'seedlings', kind: 'look', label: 'Young plum seedlings', ...at(SEEDLING_SPOT.x + 1.1, SEEDLING_SPOT.z, 1.0), stand: [SEEDLING_SPOT.x + 1.1, SEEDLING_SPOT.z + 1.6], script: 'seedlings' },
+    { id: 'pebbleBag', kind: 'look', label: 'A small cloth bag on the bench', x: built.benches[0].x + 0.3, z: built.benches[0].z, y: groundAt(built.benches[0].x, built.benches[0].z) + 0.9, script: 'pebbleBag',
+      visible: (c) => c.day >= 2 && (!c.flags.pebbles || (c.flags.pebbles === 'left' && c.day <= (c.flags.pebbleDay ?? 0))) },
+    { id: 'pebble', kind: 'look', label: 'A pebble on the bench', x: built.benches[0].x - 0.2, z: built.benches[0].z, y: groundAt(built.benches[0].x, built.benches[0].z) + 0.85, script: 'pebble',
+      visible: (c) => c.flags.pebbles === 'left' && c.day > (c.flags.pebbleDay ?? 99) && !c.flags.keptPebble },
+    { id: 'mendedBowl', kind: 'look', label: 'The tea bowl, mended', x: tea.table2.x, z: tea.table2.z, y: groundAt(tea.table2.x, tea.table2.z) + 1.2, script: 'mendedBowl',
+      visible: (c) => !!c.flags.bowl && c.day >= (c.flags.bowlDay ?? 99) + 2 },
+    { id: 'joinWalk', kind: 'go', label: 'Join the walking meditation', join: true, iconY: 2.2,
+      dynamic: () => { const w = people.list.filter((p) => p.mode === 'loop'); return w.length ? w[w.length - 1].fig : null; },
+      visible: () => people.list.some((p) => p.mode === 'loop') },
   ];
   return list;
 }

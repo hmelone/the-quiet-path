@@ -9,6 +9,7 @@ import { buildAll, updateGlow, calligraphy } from './buildings.js';
 import { Nav } from './nav.js';
 import { People } from './people.js';
 import { Animals } from './animals.js';
+import { Changing } from './changing.js';
 import { buildInteractables } from './interactables.js';
 import { colorize, merge, jitter } from './geo.js';
 import { atmosphere } from '../world/atmosphere.js';
@@ -115,6 +116,7 @@ export class World {
     await tick();
     this.nav = new Nav(this.built.colliders, fol.obstacles);
     this.people = new People(e.scene, this.built);
+    this.changing = new Changing(e.scene, this.built);
     this.animals = new Animals(e.scene);
     this.interactables = buildInteractables(this.built, this.people);
     for (const it of this.interactables) {
@@ -136,12 +138,13 @@ export class World {
     updateGlow(this.built, this.atm, timeName);
     updateWater(this.water, this.atm, this.engine.sunDir, this.t, 1);
     this.people.arrange(cond.time, cond.weather);
-    this.animals.arrange(cond.time, cond.weather);
+    this.animals.arrange(cond.time, cond.weather, cond.day);
     const mm = this.mist.userData.mat;
     mm.opacity = Math.min(0.36, this.atm.mist * 0.34 + (cond.weather === 'mist' ? 0.05 : 0));
     mm.color.setRGB(...this.atm.fog, THREE.SRGBColorSpace);
     this.rain.visible = this.atm.rain > 0;
-    this.placeBowl(cond.flags);
+    this.placeBowl(cond.flags, cond.day);
+    this.changing.update(cond);
   }
 
   /** Lighter-weight refresh when only interior/exterior changes. */
@@ -152,14 +155,36 @@ export class World {
     this.engine.applyAtmosphere(this.atm, timeName, this.cond.weather, interior);
   }
 
-  placeBowl(flags) {
+  /** Is the bowl back, mended, a couple of days after it was broken? */
+  static bowlMended(flags, day) {
+    return !!flags.bowl && day >= (flags.bowlDay ?? 99) + 2;
+  }
+
+  placeBowl(flags, day = this.cond?.day ?? 1) {
     const tea = this.built.tea.spots;
     const b = flags.bowl;
     let spot = null;
-    if (!b || (b === 'left' && !flags.bowlTaken)) spot = { ...tea.wall, y: groundAt(tea.wall.x, tea.wall.z) + 0.6 };
+    const mended = World.bowlMended(flags, day);
+    if (mended) spot = { ...tea.table2, y: groundAt(tea.table2.x, tea.table2.z) + 0.78 };
+    else if (!b || (b === 'left' && !flags.bowlTaken)) spot = { ...tea.wall, y: groundAt(tea.wall.x, tea.wall.z) + 0.6 };
     else if (b === 'table' && !flags.bowlCollected) spot = { ...tea.table2, y: groundAt(tea.table2.x, tea.table2.z) + 0.78 };
     this.bowl.visible = !!spot;
     if (spot) this.bowl.position.set(spot.x, spot.y, spot.z);
+    // the mend: a thin bright seam where the piece was set back
+    if (!this.seam) {
+      this.seam = new THREE.Mesh(new THREE.TorusGeometry(0.105, 0.006, 4, 16, 0.9), new THREE.MeshBasicMaterial({ color: 0xd9b45a }));
+      this.seam.rotation.set(Math.PI / 2, 0, 0.2);
+      this.seam.position.y = 0.1;
+      this.bowl.add(this.seam);
+    }
+    this.seam.visible = mended;
+  }
+
+  /** Re-show story-driven things after a script changes something. */
+  refresh() {
+    if (!this.cond) return;
+    this.placeBowl(this.cond.flags, this.cond.day);
+    this.changing.update(this.cond);
   }
 
   update(dt, player) {

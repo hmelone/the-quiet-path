@@ -98,7 +98,7 @@ export class Hud {
     if (name === this._walking) return;
     this._walking = name;
     this.walkBar.hidden = !name;
-    if (name) this.walkText.textContent = name === 'there' ? 'Walking…' : `Walking to ${name}…`;
+    if (name) this.walkText.textContent = name === 'there' ? 'Walking…' : name === 'the walking meditation' ? 'Walking meditation · slowly, with the line' : `Walking to ${name}…`;
   }
 
   /** Accessible list of nearby things as real buttons. */

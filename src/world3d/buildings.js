@@ -288,7 +288,8 @@ function buildHall() {
   const k = new Kit();
   const W = B.w, D = B.d, F = B.floor, H = 3.4;
   // platform and steps
-  k.box(W + 1.6, F, D + 1.6, 0, -0.2, 0, STONE, { noise: 0.25 });
+  // the stone base reaches right up to the floor, and down into the slope
+  k.box(W + 1.6, F + 0.6, D + 1.6, 0, -0.6, 0, STONE, { noise: 0.25 });
   for (let i = 0; i < 2; i++) k.box(B.door.w + 1, F * (0.5 - i * 0.25) + 0.05, 0.5, 0, -0.2, D / 2 + 1.05 + i * 0.5, STONE);
   // floor
   k.box(W, 0.06, D, 0, F - 0.06, 0, WOOD_L);
@@ -426,6 +427,7 @@ function buildTea() {
   const k = new Kit();
   const W = B.w, D = B.d, H = 3.0;
   k.box(W, H, D, 0, 0, 0, STONE, { collide: true, noise: 0.45, rough: 0.09 });
+  k.box(W + 0.25, 0.7, D + 0.25, 0, -0.6, 0, STONE, { noise: 0.5 }); // plinth into the ground
   k.geo(gableEnds(W, D, 1.8, H, (x, y, z) => vary(C(STONE), 0.09, x * 2, y * 2, z * 2)));
   k.geo((() => { const g = gableRoof(W, D, 1.8, TERRACOTTA, 0.5); g.translate(0, H, 0); return g; })(), (x, y, z) => vary(C(TERRACOTTA), 0.07, x * 3, y, z * 3).multiplyScalar(0.92 + Math.sin(x * 10) * 0.05));
   k.box(0.6, 1.4, 0.6, W / 2 - 1.2, H + 0.8, -0.8, STONE, { noise: 0.4 }); // chimney
@@ -474,7 +476,9 @@ function buildHut() {
   const p = PADS.hut;
   const k = new Kit();
   const W = B.w, D = B.d, F = B.floor, H = 2.5;
-  k.box(W + 0.6, F, D + 0.6, 0, -0.15, 0, STONE, { noise: 0.3 });
+  // stone footing up to the floor (no gap under the walls), sunk into the ground
+  k.box(W + 0.6, F + 0.55, D + 0.6, 0, -0.55, 0, STONE, { noise: 0.3 });
+  k.box(W + 0.16, 0.12, D + 0.16, 0, F - 0.06, 0, WOOD_D); // sill beam under the walls
   k.box(W, 0.05, D, 0, F - 0.05, 0, WOOD_L);
   floorboards(k, W - 0.1, D - 0.1, F);
   k.box(W, H, 0.15, 0, F, D / 2, WOOD_L, { collide: true });
