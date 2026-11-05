@@ -435,10 +435,11 @@ Real phones; how the new moments feel across several in-game days; whether the h
   - lacquered beams and brackets on the veranda;
   - panelled double doors folded back beside the doorway;
   - blue-grey wooden shutters at the windows;
-  - a clay-tile roof with curled ridge ends and a lotus-bud finial;
+  - a clay-tile roof;
   - exposed beams inside.
 
   The gate and bell tower now share the clay-tile roofs.
+- **Follow-up: the roof shape.** The first try still looked Japanese, and the playtest pinned down why: the corners pointed up and the middle of each edge sagged. The old roof builder curved every eave upward toward the corners. The hall, gate and tower now have **straight eaves**. The hall roof is a plain, steeper hip roof of clay tiles with a narrower side overhang, straight ridge and hip tiles, and a simple eave board, like the farm buildings of the French countryside. The curled ridge ends and the lotus-bud finial are gone.
 - **The hut roof rests on the walls.** The roof was hung at the wall tops by its eaves, so its slope left a gap of about 25 cm above the long walls. Roofs are now lowered by their overhang, and the gable ends match. There's also a wall plate along the eaves and beams under the ceiling. The tea house roof got the same fix.
 - **A real kitchen in the tea house.** The farmhouse is hollow now, with:
   - limewashed walls and a flagstone floor;

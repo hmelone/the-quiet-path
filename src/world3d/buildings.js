@@ -215,7 +215,7 @@ function buildGate() {
     k.box(0.5, 1.4, 4.0, s * 4.2, 0, 0.0, STONE, { collide: true, noise: 0.3, rotY: Math.PI / 2 });
   }
   k.box(5.6, 0.35, 0.45, 0, 3.0, 0, WOOD);
-  k.geo((() => { const g = hipRoof(6.4, 2.4, 1.3, 0.45, TILE); g.translate(0, 3.85, 0); return g; })(), (x, y, z) => vary(C(TILE), 0.06, x, y, z));
+  k.geo((() => { const g = hipRoof(6.4, 2.4, 1.3, 0, TILE); g.translate(0, 3.85, 0); return g; })(), (x, y, z) => vary(C(TILE), 0.06, x, y, z));
   const g = new THREE.Group();
   g.add(k.mesh());
   const b = board('Slow down. You are here.', 2.6, 0.55, { w: 640, h: 136 });
@@ -248,7 +248,7 @@ function buildTower() {
   k.box(4.0, 0.22, 0.25, 0, 3.9, -1.8, WOOD_D).box(4.0, 0.22, 0.25, 0, 3.9, 1.8, WOOD_D);
   k.box(0.25, 0.22, 4.0, -1.8, 3.9, 0, WOOD_D).box(0.25, 0.22, 4.0, 1.8, 3.9, 0, WOOD_D);
   k.box(4.0, 0.2, 0.3, 0, 4.1, 0, WOOD_D);
-  k.geo((() => { const g = hipRoof(5.6, 5.6, 1.9, 0.55, TILE); g.translate(0, 4.4, 0); return g; })(), (x, y, z) => vary(C(TILE), 0.06, x, y, z));
+  k.geo((() => { const g = hipRoof(5.6, 5.6, 1.9, 0, TILE); g.translate(0, 4.4, 0); return g; })(), (x, y, z) => vary(C(TILE), 0.06, x, y, z));
   const g = new THREE.Group();
   g.add(k.mesh());
   const bell = new THREE.Mesh(colorize(bellGeo(), (x, y, z) => vary(C(BRONZE), 0.08, x * 4, y * 4, z * 4).multiplyScalar(0.8 + (y + 1.2) * 0.2)), paint({ side: THREE.DoubleSide }));
@@ -493,26 +493,27 @@ function buildHall() {
     for (const yy of [0.25, 1.05]) k.box(0.6, 0.62, 0.03, dx, F + yy, D / 2 + 0.19, LACQUER_D);
     k.box(0.6, 0.5, 0.03, dx, F + 1.8, D / 2 + 0.19, '#c9a35c');
   }
-  // roof: clay tiles, a ridge with curled ends and a lotus-bud finial
-  const RW = W + 3.8, RD = D + 3.6, RH = 2.8, ry = y0 + H + 0.15;
-  k.geo((() => { const g = hipRoof(RW, RD, RH, 0.45, TILE, 14); g.translate(0, ry, 0.3); return g; })(), (x, y, z) => vary(C(TILE), 0.06, x, y, z).multiplyScalar(0.92 + Math.sin((Math.abs(z - 0.3) + Math.abs(x) * 0.15) * 14) * 0.05));
+  // roof: a plain, straight-edged clay-tile hip roof, like the farm buildings of
+  // the French countryside where the tradition's first community lives. No
+  // upturned corners or sagging eaves (those read as Japanese temple roofs).
+  const RW = W + 1.4, RD = D + 3.6, RH = 4.4, ry = y0 + H + 0.12;
+  k.geo((() => { const g = hipRoof(RW, RD, RH, 0, TILE, 14); g.translate(0, ry, 0.3); return g; })(), (x, y, z) => vary(C(TILE), 0.06, x, y, z).multiplyScalar(0.92 + Math.sin((Math.abs(z - 0.3) + Math.abs(x) * 0.15) * 14) * 0.05));
   const rw = (RW - RD) / 2, top = ry + RH;
-  k.box(rw * 2 + 0.3, 0.26, 0.3, 0, top - 0.06, 0.3, '#7f3f2a');
-  for (const s of [-1, 1]) {
-    // curled ridge ends, as on Vietnamese temple roofs
-    k.geo(new THREE.TorusGeometry(0.32, 0.09, 6, 10, Math.PI * 1.2).rotateZ(-0.2).scale(s, 1, 1).translate(s * (rw + 0.05), top + 0.3, 0.3), '#7f3f2a');
-    // hip ridges down to the corners
-    for (const sz of [-1, 1]) {
-      const a = new THREE.Vector3(s * rw, top, 0.3), b = new THREE.Vector3(s * RW / 2, ry + 0.45, 0.3 + sz * RD / 2);
-      const len = a.distanceTo(b);
-      const m = new THREE.Matrix4().lookAt(a, b, new THREE.Vector3(0, 1, 0));
-      const cg = new THREE.CylinderGeometry(0.09, 0.09, len, 6).rotateX(Math.PI / 2).applyMatrix4(m);
-      cg.translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
-      k.geo(cg, '#7f3f2a');
-    }
+  // ridge and hip tiles: rounded rolls, laid straight
+  const roll = (a, b) => {
+    const len = a.distanceTo(b);
+    const m = new THREE.Matrix4().lookAt(a, b, new THREE.Vector3(0, 1, 0));
+    const cg = new THREE.CylinderGeometry(0.1, 0.1, len, 6).rotateX(Math.PI / 2).applyMatrix4(m);
+    cg.translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
+    k.geo(cg, '#8a4630');
+  };
+  roll(new THREE.Vector3(-rw - 0.1, top, 0.3), new THREE.Vector3(rw + 0.1, top, 0.3));
+  for (const s of [-1, 1]) for (const sz of [-1, 1]) {
+    roll(new THREE.Vector3(s * rw, top, 0.3), new THREE.Vector3(s * RW / 2, ry, 0.3 + sz * RD / 2));
   }
-  const bud = new THREE.LatheGeometry([[0, 0], [0.22, 0.02], [0.26, 0.12], [0.2, 0.18], [0.12, 0.22], [0.2, 0.32], [0.24, 0.5], [0.17, 0.7], [0.07, 0.86], [0, 0.95]].map(([x, y]) => new THREE.Vector2(x, y)), 12);
-  k.geo(bud.translate(0, top + 0.06, 0.3), (x, y, z) => vary(C(y > top + 0.3 ? '#c9a24a' : '#7f3f2a'), 0.05, x, y, z));
+  // a plain fascia board along the eaves
+  for (const sz of [-1, 1]) k.box(RW, 0.14, 0.06, 0, ry - 0.12, 0.3 + sz * RD / 2, LACQUER_D);
+  for (const sx of [-1, 1]) k.box(0.06, 0.14, RD, sx * RW / 2, ry - 0.12, 0.3, LACQUER_D);
   // ceiling with exposed lacquered beams (so the interior is enclosed)
   k.box(W, 0.08, D, 0, y0 + H, 0, '#8a6a4c');
   for (const x of [-W / 4, 0, W / 4]) k.box(0.22, 0.24, D, x, y0 + H - 0.24, 0, LACQUER_D);
