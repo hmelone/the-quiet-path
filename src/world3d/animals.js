@@ -102,12 +102,85 @@ function walk(a, dt, go, moving, rate, stride) {
   p.needsUpdate = true; n.needsUpdate = true;
 }
 
-const LAND = new Set(['deer', 'fox', 'rabbit', 'squirrel', 'groundBird', 'cat', 'snake']);
+const LAND = new Set(['deer', 'fox', 'rabbit', 'squirrel', 'groundBird', 'cat', 'snake', 'snail']);
 /** Dry ground that isn't the pond, the stream bridge or inside a building. */
 export function landOk(x, z) {
   if (pondDist(x, z) < 1.18 && !onBridge(x, z)) return false;
   for (const b of Object.values(BUILDINGS)) if (inBuilding(b, x, z, 0.3)) return false;
   return true;
+}
+
+
+// --- small pond and path life: frogs, tiny snails, turtles -----------------------------
+// Built facing -Z, then turned to face +X like the other animals here.
+const ell = (r, sx, sy, sz, x, y, z, col, seg = 10) => colorize(new THREE.SphereGeometry(r, seg, Math.max(6, seg - 3)).scale(sx, sy, sz).translate(x, y, z), col);
+function faceX(g) { g.rotateY(-Math.PI / 2); return g; }
+
+/** A small pond frog, about 12 cm: squat body, bright eyes, folded hind legs. */
+function frogGeo(seed = 0) {
+  const top = ['#5f8a3c', '#6b8f45', '#4f7a3a', '#7a8a4a'][seed % 4];
+  const parts = [
+    ell(0.05, 1, 0.55, 1.35, 0, 0.032, 0.005, top, 12),            // body
+    ell(0.045, 0.95, 0.35, 1.2, 0, 0.022, 0.01, '#d6d29a', 10),     // pale belly
+    ell(0.034, 1.15, 0.7, 1, 0, 0.045, -0.06, top, 10),             // head
+  ];
+  for (const sx of [-1, 1]) {
+    parts.push(ell(0.013, 1, 1, 1, sx * 0.022, 0.066, -0.066, '#c9b25a', 8));  // golden eye
+    parts.push(ell(0.008, 1, 1, 1, sx * 0.025, 0.07, -0.073, '#1c1a14', 6));   // pupil
+    parts.push(ell(0.022, 0.6, 0.5, 1.9, sx * 0.05, 0.022, 0.045, top, 8));    // folded thigh
+    parts.push(ell(0.016, 0.5, 0.35, 1.8, sx * 0.055, 0.008, 0.005, top, 8));  // lower leg
+    parts.push(ell(0.012, 0.9, 0.3, 1.4, sx * 0.06, 0.004, -0.03, '#4a6a32', 6)); // foot
+    parts.push(ell(0.01, 0.6, 1.4, 0.6, sx * 0.03, 0.012, -0.06, top, 6));     // front leg
+  }
+  for (let i = 0; i < 5; i++) parts.push(ell(0.007, 1, 0.4, 1, Math.sin(i * 2.3) * 0.025, 0.055, 0.03 - i * 0.012, '#3e5f2c', 5)); // spots
+  return faceX(mergeGeometries(parts));
+}
+
+/** A tiny garden snail, about 5 cm: a banded spiral shell on a soft foot. */
+function snailGeo(seed = 0) {
+  const shellCol = ['#a0703c', '#8a6a44', '#b38450'][seed % 3];
+  const parts = [ell(0.012, 0.8, 0.45, 3.2, 0, 0.006, -0.005, '#b8a684', 8)]; // foot
+  parts.push(ell(0.007, 1, 1, 1.4, 0, 0.013, -0.036, '#b0a07e', 6)); // head
+  for (const sx of [-1, 1]) {
+    parts.push(colorize(new THREE.CylinderGeometry(0.0015, 0.002, 0.016, 4).rotateX(-0.6).rotateZ(sx * 0.35).translate(sx * 0.004, 0.022, -0.042), '#9c8c6c'));
+    parts.push(ell(0.0028, 1, 1, 1, sx * 0.007, 0.03, -0.047, '#5a4a38', 4));
+  }
+  // the shell: a spiral of shrinking spheres, banded
+  for (let i = 0; i < 9; i++) {
+    const a = i * 0.75, r = 0.016 * (1 - i * 0.085);
+    const rad = 0.006 * (1 - i * 0.1);
+    parts.push(ell(r, 0.75, 1, 1, Math.cos(a) * rad * 0.4, 0.024 + Math.sin(a) * rad + i * 0.0006, 0.006 + Math.cos(a) * rad, i % 2 ? shellCol : '#6e4a2a', 8));
+  }
+  return faceX(mergeGeometries(parts));
+}
+
+/** A pond turtle, about 30 cm: a domed, plated shell, head and four paddling legs. */
+function turtleGeo() {
+  const shell = colorize(new THREE.SphereGeometry(0.15, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(0.85, 0.42, 1.15).translate(0, 0.035, 0),
+    (x, y, z) => {
+      // scutes: a dark seam pattern over olive-brown plates
+      const seam = Math.abs(Math.sin(x * 34)) < 0.12 || Math.abs(Math.sin(z * 26 + Math.abs(x) * 6)) < 0.1;
+      return new THREE.Color(seam ? '#2f3424' : (Math.sin(x * 13 + z * 9) > 0 ? '#5d5e36' : '#6b6a3e'));
+    });
+  const parts = [shell, colorize(new THREE.CylinderGeometry(0.125, 0.125, 0.02, 16).scale(1, 1, 1.35).translate(0, 0.028, 0), '#b8a46a')];
+  parts.push(ell(0.022, 0.9, 0.8, 2.2, 0, 0.035, -0.17, '#5a5f3a', 8));  // neck
+  parts.push(ell(0.03, 1, 0.85, 1.25, 0, 0.042, -0.215, '#5f653e', 10)); // head
+  for (const sx of [-1, 1]) {
+    parts.push(ell(0.012, 1, 0.5, 1, sx * 0.03, 0.052, -0.235, '#e0b23a', 5)); // yellow cheek stripe
+    parts.push(ell(0.006, 1, 1, 1, sx * 0.022, 0.056, -0.24, '#16140f', 5));
+    for (const z of [-0.1, 0.11]) parts.push(ell(0.035, 1.3, 0.35, 0.8, sx * 0.12, 0.02, z, '#5a5f3a', 8)); // legs
+  }
+  parts.push(colorize(new THREE.ConeGeometry(0.015, 0.06, 6).rotateX(Math.PI / 2).translate(0, 0.03, 0.18), '#5a5f3a')); // tail
+  return faceX(mergeGeometries(parts));
+}
+
+/** A flat, sun-warmed rock at the pond's edge, for a turtle to bask on. */
+function baskRockGeo() {
+  const g = new THREE.SphereGeometry(0.42, 12, 7).scale(1.2, 0.32, 0.9);
+  const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) p.setY(i, p.getY(i) * (1 + Math.sin(p.getX(i) * 9) * 0.15));
+  g.computeVertexNormals();
+  return colorize(g, (x, y, z) => new THREE.Color(y > 0.06 ? '#8f8a7c' : '#5c5a4e').multiplyScalar(0.9 + Math.sin(x * 21 + z * 17) * 0.08));
 }
 
 export class Animals {
@@ -279,7 +352,48 @@ export class Animals {
       const m = new THREE.Mesh(snakeGeo(), this.mat);
       this.addAnimal(m, { kind: 'snake', label: 'a snake resting on the warm stones', x, z, yaw: rare.f() * 6, lookable: true });
     }
+    // --- small life: frogs from dawn to evening, tiny snails, and turtles on dry days ---
+    const small = new Rng(`small-${day}-${time}`);
+    const pads = (this.pads || []).filter((p) => pondDist(p.x, p.z) > 0.55 && !onBridge(p.x, p.z));
+    const shoreAt = (ang, r) => this._shore(ang, r);
+    if (time <= 3) {
+      const nPad = rain ? 3 : 2, nShore = rain ? 3 : 2;
+      for (let i = 0; i < nPad && pads.length; i++) {
+        const pd = pads[Math.floor(small.f() * pads.length)];
+        this.addAnimal(new THREE.Mesh(frogGeo(i), this.mat), { kind: 'frog', label: 'a frog on a lotus leaf', x: pd.x, z: pd.z, y: WATER_Y + 0.04, yaw: small.f() * 6, phase: small.f() * 9, lookable: true, grow: 1.3 });
+      }
+      for (let i = 0; i < nShore; i++) {
+        const a = small.f() * Math.PI * 2;
+        const [x, z] = shoreAt(a);
+        if (onBridge(x, z)) continue;
+        this.addAnimal(new THREE.Mesh(frogGeo(i + 2), this.mat), { kind: 'frog', label: 'a frog at the water’s edge', x, z, yaw: a + Math.PI, phase: small.f() * 9, lookable: true, grow: 1.3, shore: a, hopT: 6 + small.f() * 10 });
+      }
+    }
+    if (time <= 3) {
+      // more snails after rain, in mist, and in the cool of dawn and evening
+      const damp = rain || weather === 'mist' || time === 0 || time === 3;
+      const spots = [[17.6, 39.4, 0], [-23.0, 46.9, 0], [-7.2, 5.4, 0], [4.2, -10.6, 0], [-11.4, 31.5, 0], [21.6, 37.2, 0]];
+      spots.forEach(([x, z, up], i) => {
+        if (!damp && small.f() < 0.55) return;
+        this.addAnimal(new THREE.Mesh(snailGeo(i), this.mat), { kind: 'snail', label: 'a tiny snail', x, z, y: groundAt(x, z) + up, up, home: [x, z], yaw: small.f() * 6, lookable: true, grow: 1.6 });
+      });
+    }
+    if ((time === 1 || time === 2) && !rain) {
+      // one basks on a warm rock at the pond's south-east edge; one paddles slowly
+      const [rx, rz] = shoreAt(0.9, 0.97);
+      const rock = new THREE.Mesh(baskRockGeo(), this.mat);
+      this.addAnimal(rock, { kind: 'rock', x: rx, z: rz, y: WATER_Y - 0.06 });
+      if (weather !== 'mist') this.addAnimal(new THREE.Mesh(turtleGeo(), this.mat), { kind: 'turtle', label: 'a turtle basking on a rock', x: rx, z: rz, y: WATER_Y + 0.07, yaw: 0.9 + Math.PI, lookable: true, bask: true });
+      this.addAnimal(new THREE.Mesh(turtleGeo(), this.mat), { kind: 'turtle', label: 'a turtle swimming in the pond', x: POND.x, z: POND.z, y: WATER_Y - 0.075, lookable: true, swim: small.f() * 6 });
+    }
     this.fireflies.visible = (time === 3 || time === 4) && !rain;
+  }
+
+  /** A point on the pond's edge at angle a (pondDist ≈ r). */
+  _shore(a, r = 1.04) {
+    let lo = 0, hi = 20;
+    for (let i = 0; i < 20; i++) { const m = (lo + hi) / 2; if (pondDist(POND.x + Math.cos(a) * m, POND.z + Math.sin(a) * m) < r) lo = m; else hi = m; }
+    return [POND.x + Math.cos(a) * lo, POND.z + Math.sin(a) * lo];
   }
 
   addAnimal(obj, o) {
@@ -287,7 +401,7 @@ export class Animals {
     const a = { obj, ...o, t: 0 };
     obj.position.set(o.x, o.y ?? groundAt(o.x, o.z), o.z);
     obj.rotation.y = o.yaw || 0;
-    const grow = { butterfly: 2.4, rabbit: 1.3, groundBird: 1.35, squirrel: 1.3 }[o.kind];
+    const grow = o.grow || { butterfly: 2.4, rabbit: 1.3, groundBird: 1.35, squirrel: 1.3 }[o.kind];
     if (grow) obj.scale.multiplyScalar(grow);
     this.list.push(a);
     return a;
@@ -476,6 +590,68 @@ export class Animals {
           o.position.y = 11 + Math.sin(t * 0.6) * 1.2;
           o.rotation.set(0, a.dir > 0 ? 0 : Math.PI, Math.sin(t * 2.4) * 0.15);
           if (Math.abs(o.position.x) > 78) { o.visible = false; a.wait = 70 + this.rng.f() * 80; }
+        }
+      } else if (a.kind === 'frog') {
+        const pd = Math.hypot(player.x - o.position.x, player.z - o.position.z);
+        if (a.gone) {
+          // back from the water after a while, a little along the shore
+          a.gone -= dt;
+          if (a.gone <= 0 && pd > 4) { a.gone = 0; o.visible = true; }
+        } else {
+          o.scale.y = (a.grow || 1) * (1 + Math.sin(t * 5 + a.phase) * 0.035); // throat pulsing
+          if (a.shore != null) {
+            if (a.hop) {
+              // a short arc; into the water if you came close
+              a.hop.t += dt / 0.45;
+              const k = Math.min(1, a.hop.t);
+              o.position.x = a.hop.x0 + (a.hop.x1 - a.hop.x0) * k;
+              o.position.z = a.hop.z0 + (a.hop.z1 - a.hop.z0) * k;
+              o.position.y = a.hop.y0 + (a.hop.y1 - a.hop.y0) * k + Math.sin(k * Math.PI) * 0.12;
+              if (k >= 1) {
+                if (a.hop.splash) { o.visible = false; a.gone = 18 + this.rng.f() * 20; a.plop = true; a.shore += this.rng.range(-0.25, 0.25); const [x, z] = this._shore(a.shore); o.position.set(x, groundAt(x, z), z); o.rotation.y = a.shore + Math.PI; }
+                a.hop = null;
+              }
+            } else if (pd < 1.6) {
+              const [x1, z1] = this._shore(a.shore, 0.9);
+              a.hop = { t: 0, x0: o.position.x, z0: o.position.z, y0: o.position.y, x1, z1, y1: WATER_Y - 0.05, splash: true };
+            } else if ((a.hopT -= dt * go) <= 0) {
+              a.hopT = 8 + this.rng.f() * 14;
+              a.shore += this.rng.range(-0.06, 0.06);
+              const [x1, z1] = this._shore(a.shore);
+              if (!onBridge(x1, z1)) a.hop = { t: 0, x0: o.position.x, z0: o.position.z, y0: o.position.y, x1, z1, y1: groundAt(x1, z1) };
+            }
+          }
+        }
+      } else if (a.kind === 'snail') {
+        // creeping, slowly, near home, gently turning
+        a.turn = (a.turn ?? 0) + Math.sin(t * 0.2 + a.home[0]) * 0.002;
+        o.rotation.y += a.turn * dt * go;
+        const sp = 0.004 * dt * go;
+        o.position.x += Math.cos(-o.rotation.y) * sp;
+        o.position.z += Math.sin(-o.rotation.y) * sp;
+        if (Math.hypot(o.position.x - a.home[0], o.position.z - a.home[1]) > 0.35) o.rotation.y += Math.PI * 0.6 * dt;
+        o.position.y = groundAt(o.position.x, o.position.z) + (a.up || 0);
+        o.scale.x = (a.grow || 1) * (1 + Math.sin(t * 1.3 + a.home[1]) * 0.05); // the foot stretching
+      } else if (a.kind === 'turtle') {
+        if (a.bask) {
+          const pd = Math.hypot(player.x - o.position.x, player.z - o.position.z);
+          if (!a.sliding && pd < 2.6) { a.sliding = 1; a.plop = true; }
+          if (a.sliding) {
+            // slides calmly off the rock and away under the water
+            a.sliding += dt;
+            const dir = Math.atan2(POND.z - o.position.z, POND.x - o.position.x);
+            o.rotation.y = -dir;
+            o.position.x += Math.cos(dir) * 0.25 * dt; o.position.z += Math.sin(dir) * 0.25 * dt;
+            o.position.y -= 0.12 * dt;
+            if (a.sliding > 4) { o.visible = false; }
+          } // otherwise basking: perfectly still in the sun
+        } else {
+          // paddling a slow loop around the pond, just under the surface
+          a.swim += dt * 0.045 * go;
+          const r = 0.55 + Math.sin(a.swim * 1.7) * 0.12;
+          const x = POND.x + Math.cos(a.swim) * POND.rx * r, z = POND.z + Math.sin(a.swim) * POND.rz * r;
+          o.rotation.y = Math.atan2(-(z - o.position.z), x - o.position.x) || o.rotation.y;
+          o.position.set(x, WATER_Y - 0.075 + Math.sin(t * 0.8) * 0.01, z);
         }
       } else if (a.kind === 'snake') {
         if (a.leaving) {

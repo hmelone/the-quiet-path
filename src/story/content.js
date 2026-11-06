@@ -106,6 +106,30 @@ export const SCRIPTS = {
   },
 
   // --- forest animals -------------------------------------------------------------------
+  async animal_frog(api) {
+    const lines = [
+      'A small frog sits very still, throat pulsing, eyes like two gold beads. It seems completely at home exactly where it is.',
+      'A frog on a lotus leaf. The leaf dips a little under its weight, then holds. Neither of them seems to be waiting for anything.',
+      'You crouch to look. The frog looks back. After a while you notice you are both just breathing.',
+    ];
+    await api.say({ title: 'A frog', text: lines[(api.day + api.time) % lines.length] });
+  },
+  async animal_snail(api) {
+    const lines = [
+      'A snail no bigger than your thumbnail is crossing a stone. It has been crossing it, probably, for some time. There is a faint silver line behind it.',
+      'A tiny snail, its shell banded like a little seed. Its eye-stalks dip and lift as it goes. Nothing about it is in a hurry.',
+      'You step around the snail. It would be easy not to notice it at all.',
+    ];
+    await api.say({ title: 'A tiny snail', text: lines[(api.day + api.time) % lines.length] });
+  },
+  async animal_turtle(api) {
+    const lines = [
+      'A turtle rests on the warm rock, legs stretched out, neck long, eyes half closed. It has found the sun and is simply staying with it.',
+      'Out in the pond, a small head breaks the surface, looks around, and slips under again. A turtle, going somewhere slowly.',
+      'If you come too close, the turtle slides quietly into the water. From a little way off, it lets you watch it rest.',
+    ];
+    await api.say({ title: 'A turtle', text: lines[(api.day + api.time) % lines.length] });
+  },
   async animal_deer(api) {
     const lines = [
       'A deer lifts its head from the grass and looks at you for a long moment, ears turning. Then it goes back to grazing, as if you were just another tree.',

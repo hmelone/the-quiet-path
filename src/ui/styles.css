@@ -459,10 +459,35 @@ html[data-motion='reduced'] .lib-card { animation: none; }
 .lib-status { min-height: 1.2em; font-size: 0.85em; color: var(--ink-soft); margin: 6px 0 0; }
 .lib-credit { font-size: 0.74em; color: var(--ink-soft); margin: 8px 0 0; line-height: 1.45; }
 .lib-credit a { color: var(--accent); }
+.lib-leave-row { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+/* attribution: one tap away, and always shows the licence */
+.lib-credit-box { margin-top: 8px; font-size: 0.8em; color: var(--ink-soft); }
+.lib-credit-box summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; }
+.lib-credit-box summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+/* phones: a compact sheet at the bottom; the hall stays visible above it */
 @media (max-width: 640px) {
-  .lib-wrap { align-items: flex-end; justify-content: center; background: linear-gradient(0deg, rgba(10, 12, 11, 0.5), rgba(10, 12, 11, 0) 70%); padding-left: 10px; padding-right: 10px; }
-  .lib-card { width: 100%; max-height: 78vh; padding: 14px 14px 12px; }
-  .lib-welcome { font-size: 1.05em; }
+  .lib-wrap { align-items: flex-end; justify-content: center; background: linear-gradient(0deg, rgba(10, 12, 11, 0.45), rgba(10, 12, 11, 0) 60%); padding: 0 8px calc(8px + var(--safe-b)); }
+  .lib-card { width: 100%; max-height: 60vh; max-height: 60dvh; padding: 10px 12px 0; border-radius: 16px; font-size: 0.94em; }
+  .lib-head h2 { font-size: 1.2em; }
+  .lib-welcome { font-size: 0.98em; margin: 2px 0 8px; line-height: 1.3; }
+  .lib-about { display: none; }
+  /* the talks become a row of cards you swipe through */
+  .lib-list { flex-direction: row; overflow-x: auto; scroll-snap-type: x mandatory; gap: 8px; padding-bottom: 4px; margin: 0; -webkit-overflow-scrolling: touch; }
+  .lib-list li { flex: 0 0 64%; scroll-snap-align: start; }
+  .lib-item { height: 100%; padding: 0.45em 0.8em; min-height: 56px; }
+  .lib-item-title { font-size: 1.02em; line-height: 1.2; }
+  .lib-now { margin-top: 8px; padding-top: 8px; }
+  .lib-now-title { font-size: 1.05em; }
+  .lib-now-meta { margin: 0 0 4px; }
+  .lib-now-desc { font-size: 0.92em; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .lib-controls { gap: 8px; }
+  .lib-play { min-width: 84px; }
+  .lib-row { margin-top: 0; }
+  .lib-again { font-size: 0.85em; padding: 0.4em 0.9em; }
+  .lib-vol { width: 90px; }
+  .lib-status:empty { display: none; }
+  /* Sit in silence / Stand up stay reachable at the bottom of the sheet */
+  .lib-leave-row { position: sticky; bottom: 0; background: var(--panel-solid); margin: 8px -12px 0; padding: 8px 12px 10px; justify-content: stretch; }
+  .lib-leave-row button { flex: 1; }
 }
 body.listening .whispers, body.listening .thought-line { display: none; }
-.lib-leave-row { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }

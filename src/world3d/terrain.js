@@ -103,9 +103,15 @@ export function groundAt(x, z) {
   return heightAt(x, z);
 }
 
+/** Wading in the shallow stream (not on a bridge). */
+export function inStream(x, z) {
+  return polyDist(STREAM, x, z) < 1.05 && !onBridge(x, z) && pondDist(x, z) >= 1.02;
+}
+
 /** What you are walking on, for footsteps. */
 export function surfaceAt(x, z) {
   if (onBridge(x, z)) return 'wood';
+  if (inStream(x, z)) return 'water';
   for (const b of Object.values(BUILDINGS)) if (inBuilding(b, x, z, 0.4)) return 'wood';
   for (const p of PATHS) {
     if (polyDist(p.pts, x, z) < p.width / 2) return p.surface;

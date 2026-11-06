@@ -172,6 +172,7 @@ export function buildWater() {
   group.add(mk(lotusFlowerGeo(), flowers, WATER_Y + 0.05, paint({ side: THREE.DoubleSide })));
   group.userData.materials = [mat, smat];
   group.userData.lotus = flowers;
+  group.userData.pads = pads; // frogs sit on these
   return group;
 }
 

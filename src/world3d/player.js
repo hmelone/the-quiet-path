@@ -1,6 +1,6 @@
 // First-person walking: tap-to-walk along routed paths, WASD with gentle
 // sliding, eased turning, comfortable speeds, and a pause for the bell.
-import { groundAt, surfaceAt } from './terrain.js';
+import { groundAt, surfaceAt, inStream } from './terrain.js';
 
 const EYE = 1.62;
 
@@ -102,7 +102,9 @@ export class Player {
         else if ((this._stuck = (this._stuck || 0) + dt) > 1.2 && this.route.length > 1) { this.route.shift(); this._lastD = Infinity; this._stuck = 0; }
       }
     }
-    mx *= pace; mz *= pace;
+    // a slower, careful pace while wading through the stream
+    const wade = inStream(this.x, this.z) ? 0.6 : 1;
+    mx *= pace * wade; mz *= pace * wade;
     const nx = this.x + mx * dt, nz = this.z + mz * dt;
     // slide along obstacles
     if (this.nav.walkable(nx, nz)) { this.x = nx; this.z = nz; }
@@ -111,7 +113,7 @@ export class Player {
     const moved = Math.hypot(mx, mz) * dt;
     this.moving = moved > 0.0005;
     this.stepDist += moved;
-    if (this.stepDist > 0.72) {
+    if (this.stepDist > (wade < 1 ? 0.5 : 0.72)) {
       this.stepDist = 0;
       this.onStep?.(surfaceAt(this.x, this.z));
     }

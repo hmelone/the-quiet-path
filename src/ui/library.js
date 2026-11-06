@@ -39,7 +39,7 @@ export function openLibrary(root) {
     const desc = h('p', { class: 'lib-now-desc' });
     const status = h('p', { class: 'lib-status', role: 'status', 'aria-live': 'polite' });
     const playBtn = h('button', { class: 'primary lib-play', onclick: () => toggle() }, 'Play');
-    const againBtn = h('button', { class: 'lib-again', onclick: () => restart() }, 'Listen again from the beginning');
+    const againBtn = h('button', { class: 'lib-again', 'aria-label': 'Listen again from the beginning', onclick: () => restart() }, 'Listen again');
     const seek = h('input', { class: 'lib-seek', type: 'range', min: 0, max: 100, step: 1, value: 0, 'aria-label': 'Position in the talk', oninput: () => seekTo(+seek.value) });
     const elapsed = h('span', { class: 'lib-time' }, '0:00');
     const total = h('span', { class: 'lib-time' }, '0:00');
@@ -47,13 +47,15 @@ export function openLibrary(root) {
       'aria-valuetext': `${Math.round(volume * 100)}%`,
       oninput: () => { volume = audio.volume = +vol.value; vol.setAttribute('aria-valuetext', `${Math.round(volume * 100)}%`); } });
     const credit = h('p', { class: 'lib-credit' });
+    const creditSummary = h('summary', {}, 'Source and licence');
+    const creditBox = h('details', { class: 'lib-credit-box' }, creditSummary, credit);
     const now = h('section', { class: 'lib-now', 'aria-labelledby': 'lib-now-title', hidden: true },
       title, meta, desc,
       h('div', { class: 'lib-controls' }, playBtn,
         h('div', { class: 'lib-progress' }, elapsed, seek, total)),
       h('div', { class: 'lib-row' }, againBtn,
         h('label', { class: 'lib-vol-wrap', for: 'lib-vol' }, h('span', {}, 'Volume'), vol)),
-      status, credit);
+      status, creditBox);
 
     const close = (how = 'stand') => {
       if (closed) return;
@@ -110,6 +112,7 @@ export function openLibrary(root) {
         ' · Licensed under ',
         h('a', { href: t.license.url, target: '_blank', rel: 'noopener' }, t.license.name),
         '. Shared unchanged; the talk begins after AudioDharma’s short announcement. AudioDharma and the Insight Meditation Center are not connected with, and do not endorse, this game.');
+      creditSummary.textContent = `Source and licence · ${t.license.name}`;
       now.hidden = false;
       setTotal(teachingSeconds(t));
       setElapsed(0);

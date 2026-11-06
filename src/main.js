@@ -893,6 +893,7 @@ class Game {
         a.cry = (a.cry ?? 20) - dt;
         if (a.cry <= 0) { a.cry = 35 + Math.random() * 50; audio.hawk?.(); }
       }
+      if (a.plop) { a.plop = false; if (d < 25) audio.plop?.(); }
       if (a.kind === 'owlFly' && !a.hooted && Math.abs(a.obj.position.x) < 40) { a.hooted = true; audio.owlHoot?.(); }
     }
     this.thoughts.update(dt, {
@@ -935,8 +936,8 @@ class Game {
     const v = new THREE.Vector3();
     const items = [];
     const near = [];
-    const animalIcon = { deer: 1.9, fox: 1.0, rabbit: 0.7, owl: 0.6, hawk: 0, snake: 0.45 };
-    const animalLabel = { deer: 'Deer', fox: 'A fox', rabbit: 'A rabbit', owl: 'An owl', hawk: 'A hawk, circling', snake: 'A snake on the path' };
+    const animalIcon = { deer: 1.9, fox: 1.0, rabbit: 0.7, owl: 0.6, hawk: 0, snake: 0.45, frog: 0.35, snail: 0.25, turtle: 0.5 };
+    const animalLabel = { deer: 'Deer', fox: 'A fox', rabbit: 'A rabbit', owl: 'An owl', hawk: 'A hawk, circling', snake: 'A snake on the path', frog: 'A frog', snail: 'A tiny snail', turtle: 'A turtle' };
     const animalItems = [];
     for (const a of this.world.animals.list) {
       if (!a.lookable || !a.obj.visible) continue;
