@@ -19,7 +19,7 @@ export class Nav {
         const inside = Object.values(BUILDINGS).some((b) => inBuilding(b, x, z, 0.3));
         if (onBridge(x, z)) ok = true;
         else if (pondDist(x, z) < 1.02) ok = false;
-        else if (polyDist(STREAM, x, z) < 1.0 && !onPath(x, z)) ok = false;
+        // the stream is shallow: you can wade across it anywhere (but not the pond)
         else if (!inside) {
           const e = 0.6;
           const s = Math.hypot(heightAt(x + e, z) - heightAt(x - e, z), heightAt(x, z + e) - heightAt(x, z - e)) / (2 * e);

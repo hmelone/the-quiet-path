@@ -1,7 +1,8 @@
 // Builds the whole valley and keeps it in step with time, weather and story.
 import * as THREE from 'three';
 import { Engine } from './engine.js';
-import { buildTerrain, groundAt, heightAt } from './terrain.js';
+import { buildTerrain, groundAt, heightAt, inBuilding } from './terrain.js';
+import { BUILDINGS } from './layout.js';
 import { paint } from './materials.js';
 import { buildFoliage } from './foliage.js';
 import { buildWater, updateWater } from './water.js';
@@ -53,6 +54,13 @@ function mistBanks() {
   }
   group.userData.mat = mat;
   return group;
+}
+
+// Roofs reach past the walls: the hall's covers its front veranda too.
+const ROOF_MARGIN = { hall: 1.9, tea: 0.5, hut: 0.5 };
+function underRoof(x, z) {
+  for (const [id, b] of Object.entries(BUILDINGS)) if (inBuilding(b, x, z, ROOF_MARGIN[id] ?? 0.5)) return true;
+  return false;
 }
 
 function rainStreaks(n) {
@@ -118,6 +126,7 @@ export class World {
     this.people = new People(e.scene, this.built);
     this.changing = new Changing(e.scene, this.built);
     this.animals = new Animals(e.scene);
+    this.animals.pads = this.water.userData.pads;
     this.interactables = buildInteractables(this.built, this.people);
     for (const it of this.interactables) {
       if (it.kind === 'go' && it.id.startsWith('sign')) e.scene.add(signpost(it.x - 0.3, it.z, it.label.replace(/^(To|Up to|Back to|Back up to|Down to) /, '→ ')));
@@ -211,7 +220,9 @@ export class World {
         if (z - player.z > 15) z -= 30; else if (player.z - z > 15) z += 30;
         if (y < player.y - 4) y += 16;
         pos.setXYZ(i, x, y, z);
-        pos.setXYZ(i + 1, x + 0.03, y - 0.45, z + 0.02);
+        // no rain under a roof: a sheltered drop keeps falling but is drawn with no length
+        if (underRoof(x, z)) pos.setXYZ(i + 1, x, y, z);
+        else pos.setXYZ(i + 1, x + 0.03, y - 0.45, z + 0.02);
       }
       pos.needsUpdate = true;
     }

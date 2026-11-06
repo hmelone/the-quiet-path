@@ -328,6 +328,14 @@ class AudioEngine {
   }
 
   /** An owl's soft hoots as it glides over. */
+  /** A small creature slipping into the pond: a soft, low plop, no pitch sweep. */
+  plop() {
+    if (!this.ctx || settings.get('muted')) return;
+    const t = this.ctx.currentTime;
+    this._burst(t, 0.07, 0.05, 'lowpass', 520, 0.8, 'ambience', rand(-0.3, 0.3), 0.15);
+    this._burst(t + 0.03, 0.05, 0.02, 'bandpass', 1700, 1.4, 'ambience', rand(-0.3, 0.3), 0.2);
+  }
+
   owlHoot() {
     if (!this.ctx || settings.get('muted')) return;
     this.caption('[an owl hoots as it glides over]');
@@ -431,6 +439,11 @@ class AudioEngine {
     } else if (surface === 'gravel') {
       this._burst(t, 0.09, 0.03, 'bandpass', 2600, 0.7, 'effects', pan);
       this._burst(t + 0.03, 0.07, 0.02, 'bandpass', 4200, 1, 'effects', pan);
+    } else if (surface === 'water') {
+      // wading: a soft low swish as the foot moves through, then a small bright splash
+      this._burst(t, 0.22, 0.05, 'lowpass', 700, 0.7, 'effects', pan, 0.08);
+      this._burst(t + 0.05, 0.09, 0.035, 'bandpass', 2400 + rand(-300, 300), 0.9, 'effects', pan, 0.12);
+      this._burst(t + 0.11, 0.06, 0.018, 'highpass', 4200, 0.7, 'effects', pan * 1.4, 0.1);
     } else if (surface === 'stone') {
       this._burst(t, 0.05, 0.03, 'bandpass', 1500, 1.2, 'effects', pan, 0.05);
     } else {

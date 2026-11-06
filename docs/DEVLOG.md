@@ -508,3 +508,37 @@ I misread "remove the Dharma library": you meant the library corner, not the tal
 The bookcase corner stays removed. The doorway fix and the four cushions are unchanged.
 
 Rechecked on the production build: all four talks start at their timestamps and play to the end; *Sit in silence* and *Choose a talk* work; the window cushion offers the talks too; the emulated phone also passed.
+
+## v2.10: Dry indoors, wading the stream, frogs, snails and turtles
+*Date: 2026-11-06*
+
+### Your playtest notes
+- When it rains, the rain shows inside buildings.
+- On a phone, the Dharma talk player covers the whole screen; make it smaller but still easy to use.
+- Allow walking across the stream (not the pond) instead of going round to the bridge, with stepping-in-water sounds.
+- Add frogs, tiny snails, and a turtle or two during the day.
+
+### What changed
+- **No rain under roofs.** The rain is a box of streaks that follows you. A drop over the hall (including its covered veranda), the hut or the tea house is now drawn with no length. You still see rain falling outside through doors and windows. In a rainy check inside the hall, none of the ~1,000 visible drops were inside.
+- **A compact talk sheet on phones:**
+  - a bottom sheet about 58% of the screen tall, so the hall and Buddha stay visible above;
+  - the talks are a row of cards you swipe through, and the description is two lines;
+  - *Sit in silence* and *Stand up* stay pinned at the bottom;
+  - the source and licence are one tap away, with the licence always named.
+
+  On desktop the card is unchanged, apart from the source and licence also being one tap away.
+- **Wading across the stream.** The stream is walkable anywhere; the pond still isn't. You walk a little slower in the water, and each step is a soft swish with a small splash: filtered noise only, no pitched sounds. Crossing at one point went from a detour to the bridge to a 7.8 m walk straight across.
+- **Small pond and path life:**
+  - **Frogs**, from dawn to evening (more in rain): a couple sit on lotus leaves, and a couple sit at the water's edge, throats pulsing. Shore frogs make a small hop along the edge now and then. If you come close, they hop into the pond with a soft plop and come back a little later.
+  - **Tiny snails** creep very slowly on stones by the paths: by your hut, the tea house wall, the pond bench, the hall steps and the orchard path. There are more after rain, in mist, and at dawn and dusk.
+  - **Turtles** on dry mornings and afternoons: one basks on a warm rock at the pond's south-east edge and slides calmly into the water if you come within a couple of metres; another paddles slowly round the pond with just its shell and head at the surface.
+  - Each creature has a 👁 symbol, a few original lines when you look at it, and a label for photographs.
+
+### Checks
+Headless Chromium:
+- rain inside the hall: no drops drawn under the roof;
+- the stream: a walk across goes straight through, with water footsteps in the middle;
+- the pond is still not walkable;
+- the frogs, snail and turtles appear in the morning and are gone at night;
+- the basking turtle slides off, and the shore frog hops in and returns;
+- the phone sheet: 58% of the screen, playing, with Play and the bottom buttons visible and no sideways scrolling.
